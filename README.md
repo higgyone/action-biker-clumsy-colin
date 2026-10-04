@@ -61,7 +61,7 @@ then press **Enter** to play. A joystick works too. Your choice is remembered fo
 
 | Key | Fix | What it does |
 |---|---|---|
-| 4 | Easy parking | Space enters a house whenever a door is under the bike or just ahead of it, even standing still. The original only lets you in on the pass where the moving bike's front touches the door |
+| 4 | Easy parking | Space enters a house whenever a door is under the bike or just ahead of it, even standing still, and the bike pulls onto the door's path so Colin always walks up it. The original only lets you in on the pass where the moving bike's front touches the door |
 | 5 | Turn assist | a turn onto a side road pressed a tile or two early or late still works: the bike carries on to the junction, or slides across a tile, then turns |
 | 6 | Quick start | no wait to get going from a standstill, and the bike speeds up twice as fast |
 | 7 | Quick turns | the bike turns at once at any speed, instead of waiting between turn steps when slow |
@@ -79,7 +79,8 @@ With the sound off the game keeps its timing: it still waits for a tune, silentl
 ## Playing
 After the setup screen the game starts as the tape does: the KP Skips loading screen and the Action Biker title (any key skips them),
 then **Select Controls**: 1 Keyboard (N left, M right, A up, Z down, Space), 2 Kempston, 3 Sinclair (6 7 9 8 0), 4 Fuller, 5 Cursor
-(5 8 7 6, Space). The arrow keys and Space always work as well, a USB joystick or gamepad works with every scheme, and **Esc** quits.
+(5 8 7 6, Space). The arrow keys and Space always work as well, and a USB joystick or gamepad works with every scheme. **P** or **Esc**
+pauses the game (P or Esc again to carry on, **Q** to quit); before the game starts, Esc quits.
 
 You are Colin, dreaming. Find **Martin** in one of the houses and ride him to the **airport** in the top right before eight o'clock.
 Stop at a house door and press **Space** to go in: some houses hold equipment you need (a headlamp for the dark part of town, tyres for

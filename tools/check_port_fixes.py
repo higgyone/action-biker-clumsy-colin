@@ -168,6 +168,22 @@ for fixes in ((), ("easy_parking",)):
     res[bool(fixes)] = w.walk is not None
 print("easy_parking: stopped on a door, Space enters the house - original:", res[False], " with the fix:", res[True])
 ok &= res[False] is False and res[True] is True
+# ... and from a tile beside the marker, or one row off, the bike ends on the marker, so Colin walks up the path to the door
+tries = entered = on_marker = 0
+for d in [d for d in world().houses if world().door_cell(d)][:10]:
+    mx, my = world().door_cell(d)
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            w = world("easy_parking")
+            if not w.footprint_free(mx + dx, my + dy):
+                continue
+            face(w, L, mx + dx, my + dy, wait=0)
+            w.tick(0, True)
+            tries += 1
+            entered += w.walk is not None
+            on_marker += w.walk is not None and (w.px, w.py) == (mx, my)
+print(f"easy_parking: {tries} stops at or next to a door, {entered} enter the house, {on_marker} with the bike on the door's marker")
+ok &= tries > 20 and entered == tries and on_marker == tries
 
 # 5. item_markers
 w = world("item_markers")

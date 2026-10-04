@@ -442,5 +442,32 @@ if os.path.exists(snap_path):
                 bad += 1
     print(f"real dark-area snapshot: {tested} cells with a drawn tile, {bad} disagree with fetch_blank (expect 0)")
     ok &= bad == 0 and tested > 20
+
+# 10. every visit drawn frame by frame, parked facing each way: the walk-in, the room and riding off again (with Martin aboard the bike is
+#     drawn from the second set, which has no parked frames 8 and 9: $F80C uses the first set's)
+screen = pygame.Surface((256, 192))
+drawn, errors = 0, []
+for flag in biker.ITEM_POINTS:
+    for heading in (biker.LEFT, biker.RIGHT, biker.UP, biker.DOWN):
+        w = biker.World()
+        w.traffic.update = lambda: None
+        door = door_with(w, flag)
+        x, y = w.door_cell(door)
+        w.place(x, y)
+        w.heading, w.angle, w.speed, w.wait = heading, biker.FRAME[heading], 10, 0
+        w.marker = door
+        try:
+            w.park()
+            while w.walk or w.inside:
+                w.tick(0)
+                w.draw(screen)
+            for _ in range(20):
+                w.tick(1)
+                w.draw(screen)
+            drawn += 1
+        except Exception as error:
+            errors.append(f"{biker.ITEM_NAMES[flag]} facing {heading}: {error!r}")
+print(f"every item's visit drawn, parked facing each way: {drawn} of {4 * len(biker.ITEM_POINTS)} without an error", errors[:3])
+ok &= not errors
 print("ALL OK" if ok else "FAILED")
 sys.exit(0 if ok else 1)

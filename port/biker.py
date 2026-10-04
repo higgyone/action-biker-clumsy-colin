@@ -34,7 +34,8 @@ FIXES = {
     "infinite_fuel": "the fuel never runs out",
     "infinite_time": "eight o'clock never ends the day (the clock still runs)",
     "easy_parking": "the house stop fix: Space enters a house whenever a door is under the bike or just ahead of it, even when the bike has stopped "
-                    "(the original needs Space on a pass where the moving bike's front touches the door)",
+                    "(the original needs Space on a pass where the moving bike's front touches the door); the bike then stands on the door's marker, so Colin "
+                    "always walks up the path",
     "turn_assist": "turns onto side roads are forgiving: if the way you ask for is blocked but one or two tiles further along (or one tile to the side) it is "
                    "open, the bike carries on or nudges across and turns, so a turn pressed a little early or late still works",
     "quick_start": "no wait to get going: the bike moves on the pass a key is pressed from a standstill and speeds up twice as fast",
@@ -616,6 +617,15 @@ class World:
             self.px += dx
             self.py += dy
 
+    def follow_to(self, x, y):
+        """Move the bike to (x, y) a tile at a time, the view following as it does for any move (the easy_parking fix's last nudge)."""
+        while (self.px, self.py) != (x, y):
+            d = RIGHT if x > self.px else LEFT if x < self.px else DOWN if y > self.py else UP
+            self.follow(d)
+            dx, dy = STEP[d]
+            self.px += dx
+            self.py += dy
+
     def place(self, x, y):
         """Put the bike at (x, y) with the view as a new game would have it (8 tiles left of and above the bike, kept inside the map)."""
         self.px, self.py = x, y
@@ -672,6 +682,9 @@ class World:
         if self.heading == RIGHT and self.angle == FRAME[RIGHT]:   # $F81A: facing right it calls the move-right handler ($E538) first, so the bike
             self.step(RIGHT)                           # parks a tile further on (or the view scrolls) and Colin walks in from there
         self.marker = door
+        cell = self.door_cell(door) if "easy_parking" in self.fixes else None
+        if cell and (self.px, self.py) != cell and self.footprint_free(*cell):
+            self.follow_to(*cell)                      # easy parking: the bike stands on the door marker, so Colin walks up the path to the door
         here = self.houses.get(self.marker, 0)
         found = [ITEM_NAMES[f] for f in ITEM_POINTS if here & f]
         self.score += 3 + sum(pts for f, pts in ITEM_POINTS.items() if here & f)
@@ -901,6 +914,13 @@ class World:
         bright = bool(a & 0x40)
         return rgb(a & 7, bright), rgb((a >> 3) & 7, bright)
 
+    def draw_paused(self, screen):
+        """The port's pause (not in the original): a box over the middle of the play area, in the ROM font."""
+        white, blue, yellow = rgb(7, True), rgb(1, False), rgb(6, True)
+        for row, (text, ink) in enumerate((("                ", white), ("     PAUSED     ", white), ("                ", white),
+                                           (" P or ESC: play ", yellow), ("     Q: quit    ", yellow), ("                ", white))):
+            self.draw_text(screen, text, (VIEW_X + 1) * 8, (VIEW_Y + 6 + row) * 8, ink, blue)
+
     def draw_hud(self, screen):
         """Live HUD parts over the static panel (assets/hud.bin)."""
         ink, paper = self.field_colours(26, 5)
@@ -984,6 +1004,7 @@ class World:
             angle = (self.skid_from + 1 + min(15, int(spin / PASS_HZ / SKID_STEP))) % 8
         if self.walk and self.heading in (LEFT, RIGHT):   # parked on its stand: frame 8 facing left, 9 facing right ($F80C)
             angle = 8 if self.heading == LEFT else 9
+            img = self.player_img                        # $F80C points at $76C8/$76E8 in the first set, even with Martin aboard (the other sets have 8 frames)
         screen.blit(img[angle], ((self.px - cx + VIEW_X) * 8, (self.py - cy + VIEW_Y) * 8))
         if self.walk:                                    # Colin: 2x2 chars two rows above the bike, over the door cells
             frame = self.colin[32 * self.walk[0]:32 * self.walk[0] + 32]
@@ -1076,7 +1097,7 @@ def main(argv=None):
     menu_screen = screen_surface(load("screen_menu.bin"))
     world, pad, shown = None, None, 0.0
     clock = pygame.time.Clock()
-    acc, running = 0.0, True
+    acc, running, paused = 0.0, True, False
 
     def start_sound(on):
         if sound:
@@ -1084,7 +1105,20 @@ def main(argv=None):
     start_sound(set(options.SOUND) - quiet)
     while running:
         for e in pygame.event.get():
-            if e.type == pygame.QUIT or (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE):
+            if e.type == pygame.QUIT:
+                running = False
+            elif e.type == pygame.KEYDOWN and world is not None and (e.key in (pygame.K_p, pygame.K_ESCAPE) or (paused and e.key == pygame.K_q)):
+                if paused and e.key == pygame.K_q:        # paused: Q quits, P or Esc carries on
+                    running = False
+                else:
+                    paused = not paused
+                    if sound:
+                        (pygame.mixer.pause if paused else pygame.mixer.unpause)()
+                    clock.tick()                          # the time spent paused is not caught up afterwards
+                    acc = 0.0
+            elif paused:
+                pass                                      # nothing else while paused
+            elif e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:   # before the game (setup, loading screens, controls): Esc quits
                 running = False
             elif e.type == pygame.KEYDOWN and menu is not None:
                 if menu.key(e.key):                       # Enter: the setup is done, on to the tape's screens
@@ -1133,10 +1167,12 @@ def main(argv=None):
         else:
             mask, fire = pad.read(pygame.key.get_pressed())
             acc += clock.tick(50) / 1000 * PASS_HZ
-            while acc >= 1:
+            while acc >= 1 and not paused:
                 world.tick(mask, fire)
                 acc -= 1
             world.draw(screen)
+            if paused:                                    # not in the original: the port's pause (P or Esc)
+                world.draw_paused(screen)
             pygame.display.set_caption(f"Action Biker ({mode}, {pad.name.lower()}){'  [I] item markers' if 'item_markers' in fixes else ''}{'  [B] breadcrumbs' if 'breadcrumbs' in fixes else ''}{'  [Tab] map' if 'map_view' in fixes else ''}  speed {10 - world.speed}  fuel {world.fuel}  sleep {world.sleep}  "
                                        f"items {world.items:07b}  score {world.score}  {world.message}" + (f"  - {world.over}" if world.over else ""))
         pygame.transform.scale(screen, window.get_size(), window)

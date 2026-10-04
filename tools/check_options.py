@@ -6,6 +6,7 @@ Usage: python tools/check_options.py      (run from the repo root)
    keyboard controls (1): the game starts with those two fixes, and the saved choice has the sound effects off and the music on.
 2. A second run with just Enter starts with the same choice.
 3. --fix map_view starts the setup screen with only that line ticked (and the sound on), whatever was saved.
+4. In a game P pauses (the clock stands still) and P carries on; Esc pauses too, and Q quits from the pause.
 The saved choice goes to a scratch file here, not ~/.action_biker.json.
 """
 import json
@@ -30,7 +31,7 @@ def key(k):
 
 
 def run(keys, argv=()):
-    """Play main() with one key press per frame, then a few empty frames and Esc; the fixes of the game it started (None if none)."""
+    """Play main() with one key press per frame, then a few empty frames and the window closed; the fixes of the game it started (None if none)."""
     frames = [[key(k)] for k in keys] + [[]] * 5
     made = []
 
@@ -40,7 +41,7 @@ def run(keys, argv=()):
             made.append(self)
     real, real_get = biker.World, pygame.event.get
     biker.World = World
-    pygame.event.get = lambda *a, **kw: frames.pop(0) if frames else [key(pygame.K_ESCAPE)]
+    pygame.event.get = lambda *a, **kw: frames.pop(0) if frames else [pygame.event.Event(pygame.QUIT)]
     try:
         biker.main(list(argv))
     finally:
@@ -56,7 +57,43 @@ again = run(START)
 print("2. remembered next time:", again)
 given = run(START, ["--fix", "map_view"])
 print("3. --fix map_view:", given, json.load(open(options.SAVED)))
-ok = (first == ["breadcrumbs", "infinite_fuel"] and saved == {"fixes": first, "sound_effects": False, "music": True} and again == first
+
+
+def pause_trial():
+    """In a game: P pauses (the clock stands still for 60 frames), P carries on (it moves again), Esc pauses too, and Q quits from the pause."""
+    made, seen = [], []
+    script = [key(k) for k in START] + [None] * 200 + [key(pygame.K_p)] + [None] * 60 + [key(pygame.K_p)] + [None] * 60         + [key(pygame.K_ESCAPE)] + [None] * 5 + [key(pygame.K_q)]
+
+    class World(biker.World):
+        def __init__(self, *a, **kw):
+            super().__init__(*a, **kw)
+            made.append(self)
+
+    def get(*a, **kw):
+        if made:
+            w = made[0]
+            seen.append((w.tick_pass, w.tick5, w.second))
+        if not script:
+            seen.append("still running")
+            return [pygame.event.Event(pygame.QUIT)]
+        e = script.pop(0)
+        return [e] if e else []
+    real, real_get = biker.World, pygame.event.get
+    biker.World, pygame.event.get = World, get
+    try:
+        biker.main(["--no-sound-effects", "--no-music"])
+    finally:
+        biker.World, pygame.event.get = real, real_get
+    return seen
+
+
+seen = pause_trial()
+paused_part, playing_part = seen[206:262], seen[266:322]    # frames well inside the pause (after the 4 s start fanfare), and after it
+print("4. pause: clock while paused", "still" if len(set(paused_part)) == 1 else "MOVED", "| after P again",
+      "moving" if len(set(playing_part)) > 1 else "STILL", "| Q quit from the Esc pause:", "still running" not in seen)
+ok_pause = len(set(paused_part)) == 1 and len(set(playing_part)) > 1 and "still running" not in seen
+
+ok = ok_pause and (first == ["breadcrumbs", "infinite_fuel"] and saved == {"fixes": first, "sound_effects": False, "music": True} and again == first
       and given == ["map_view"])
 print("ALL OK" if ok else "FAILED")
 sys.exit(0 if ok else 1)

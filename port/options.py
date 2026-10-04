@@ -32,7 +32,7 @@ ABOUT = {                                  # shorter than the FIXES descriptions
     "infinite_sleep": "SLEEP never goes down: crashes, oil and water cost nothing.",
     "infinite_fuel": "The fuel never runs out.",
     "infinite_time": "Eight o'clock never ends the day. The clock still runs.",
-    "easy_parking": "Space enters a house whenever a door is under the bike or just ahead of it, even when stopped.",
+    "easy_parking": "Space enters a house whenever a door is under the bike or just ahead, even when stopped; Colin walks up the path.",
     "turn_assist": "Turns pressed a tile or two early or late still work: the bike carries on or slides across, then turns.",
     "quick_start": "No wait to get going, and the bike speeds up twice as fast.",
     "quick_turns": "The bike turns at once at any speed.",
