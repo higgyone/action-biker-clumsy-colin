@@ -18,7 +18,8 @@ Copies differ: of the TOSEC set, the .tzx, the [a] .tap and the [a2] .tzx give e
 and the [a] .tzx load with the colours of buildings 4-8 ($787F-$7917) zeroed, so those buildings are black on black (as that tape plays);
 a warning is printed. The [a] .z80 has damaged bike sprites at $5B09.
 
-With no path, the first .tap, .tzx, .z80 (or a .zip of one) found under Action-Biker_ZX-Spectrum_EN/ or game/ is used.
+With no path, a copy found under game/ or Action-Biker_ZX-Spectrum_EN/ is used: a .tzx first, then a .tap, then a .z80, plain
+names before [a] variants, as a file or inside a .zip.
 """
 import glob
 import io
@@ -42,13 +43,22 @@ KINDS = (".tap", ".tzx", ".z80")
 
 
 def find():
-    """The first copy of the game in the usual places, or None."""
+    """A copy of the game in the usual places, or None: a .tzx first, then a .tap, then a .z80 (a tape gives the loading screens, and of
+    the TOSEC set the .tzx is a complete copy), each as a file or inside a .zip."""
+    found = []
     for folder in SEARCH:
         for path in sorted(glob.glob(os.path.join(ROOT, folder, "**", "*"), recursive=True)):
+            if not os.path.isfile(path):          # folders can be named like files ("... .TAP")
+                continue
             low = path.lower()
-            if low.endswith(KINDS) or (low.endswith(".zip") and any(n.lower().endswith(KINDS) for n in zipfile.ZipFile(path).namelist())):
-                return path
-    return None
+            if low.endswith(".zip"):
+                inner = [n.lower() for n in zipfile.ZipFile(path).namelist() if n.lower().endswith(KINDS)]
+                kind = os.path.splitext(inner[0])[1] if inner else None
+            else:
+                kind = os.path.splitext(low)[1] if low.endswith(KINDS) else None
+            if kind:
+                found.append((KINDS.index(kind) if kind != ".tzx" else -1, "[" in os.path.basename(path), path))
+    return min(found)[2] if found else None
 
 
 def unzip(path):

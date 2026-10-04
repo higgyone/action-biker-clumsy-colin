@@ -100,7 +100,7 @@ m_lvl = np.frombuffer(mem(lvl, MAP, 16384), dtype=np.uint8).reshape(128, 128)
 write("map.bin", m_menu.tobytes())
 objects = [{"x": int(x), "y": int(y), "id": int(m_lvl[y, x])}
            for y, x in zip(*np.nonzero(m_lvl != m_menu))]
-json.dump(objects, open(os.path.join(out, "objects.json"), "w"))
+json.dump(objects, open(os.path.join(out, "objects.json"), "w", newline="\n"))
 
 # tiles (ids 32-201 real; zero the building-colour bytes that sit under ids 0-31)
 tiles = bytearray(mem(menu, TILE, 256 * 8))
@@ -138,7 +138,7 @@ sheet("vehicles.png", [(3, 2, [(vehicles[48 * v + 8 * k:48 * v + 8 * k + 8], 0x4
 # the table as the tape loads it (the menu snapshot): a new game's start-up runs one frame, which updates it once, and the port does the same
 traffic = [{"x": menu[TRAFFIC - 0x4000 + 3 * i], "y": menu[TRAFFIC - 0x4000 + 3 * i + 1], "flags": menu[TRAFFIC - 0x4000 + 3 * i + 2]}
            for i in range(20)]
-json.dump(traffic, open(os.path.join(out, "traffic.json"), "w"))
+json.dump(traffic, open(os.path.join(out, "traffic.json"), "w", newline="\n"))
 
 # houses: marker tile ids 205-253, 3 bytes each at $66B2 (26290). Bytes 0-1 and the top nibble of byte 2 are 20 item
 # slots (bit set = item present, slot k drawn from the 7-byte record at $6626 + 7*k); the low 3 bits of byte 2 are the
@@ -148,7 +148,7 @@ for i in range(49):
     b = mem(lvl, 0x66B2 + 3 * i, 3)   # level snapshot: the menu one holds a different, pre-game table
     gained = (((b[1] >> 4) << 3) & 0xF7 & 0xFF) | (b[2] >> 4)
     houses.append({"id": 205 + i, "bytes": b.hex(), "items": gained, "colour": b[2] & 7})
-json.dump(houses, open(os.path.join(out, "houses.json"), "w"), indent=0)
+json.dump(houses, open(os.path.join(out, "houses.json"), "w", newline="\n"), indent=0)
 
 # house interiors ($FA8E and $FB31): 20 item records of 7 bytes at $6626: column, "24 - row", graphics pointer, width and
 # height in chars, ink colour. The graphics are width*height chars row-major, ORed over the room. Colin stands in every room
@@ -161,7 +161,7 @@ def item_record(addr):
 interior = {"items": [item_record(0x6626 + 7 * k) for k in range(20)], "colin": item_record(63647),
             "viewport": [1, 1, 18, 18], "floor": [4, 4, 12, 12],
             "room": mem(lvl, 0x6748, 18 * 18 * 8).hex(), "room_attr": mem(lvl, 0x7168, 18 * 18).hex()}
-json.dump(interior, open(os.path.join(out, "interior.json"), "w"))
+json.dump(interior, open(os.path.join(out, "interior.json"), "w", newline="\n"))
 
 def room(bits):
     """Render one house interior (18x18 chars) as an RGB array from a 20-bit slot mask."""
@@ -232,7 +232,7 @@ def hand(place, store, store_end, draw, draw_end):
 
 clock = {"minute": [hand(p, 56392, 56407, 56410, 56419) for p in range(60)],   # $DC48-$DC57, then $DC5A-$DC63
          "hour": [hand(p, 56525, 56558, 56561, 56570) for p in range(60)]}     # $DCCD-$DCEE, then $DCF1-$DCFA
-json.dump(clock, open(os.path.join(out, "hud_clock.json"), "w"))
+json.dump(clock, open(os.path.join(out, "hud_clock.json"), "w", newline="\n"))
 
 # HUD: the screen furniture (red border, title, magenta score panel, speedometer dial, bike picture, clock face, FUEL box,
 # blue message bar) is drawn once into screen memory by the start-up. Take the level's screen and remove the moving parts: the
@@ -294,7 +294,7 @@ needles = {sp: needle(sp) for sp in range(11)}
 common_on = set.intersection(*[{tuple(p) for p in on} for on, _ in needles.values()])     # what every speed shares is the SLEEP digits
 common_off = set.intersection(*[{tuple(p) for p in off} for _, off in needles.values()])
 json.dump({str(sp): {"set": [p for p in on if tuple(p) not in common_on], "clear": [p for p in off if tuple(p) not in common_off]}
-           for sp, (on, off) in needles.items()}, open(os.path.join(out, "hud_needle.json"), "w"))
+           for sp, (on, off) in needles.items()}, open(os.path.join(out, "hud_needle.json"), "w", newline="\n"))
 font = bytes(ROM)[0x3D00:0x3D00 + 96 * 8]
 write("font.bin", font)   # the ROM font, chars 32-127: the game prints all its text with it
 sheet("font.png", [(1, 1, [(font[8 * c:8 * c + 8], 0x47)]) for c in range(96)], 16, 1, 1, 4)
@@ -305,7 +305,7 @@ json.dump({"map": MAP, "tiles": TILE, "tile_attr": TATTR, "buildings": BLK, "bui
            "player_start": [r(0xE51A), r(0xE51B)], "camera_start": [r(0xE90B), r(0xE90C)],
            "heading": r(0xE519), "sleep": r(0x5B04),
            "traffic_seed": menu[0xF2B7 - 0x4000],   # $F2B7: the traffic generator's seed as the tape loads it (0); the start-up frame moves it on
-           "note": "start values are read from the level snapshot"}, open(os.path.join(out, "meta.json"), "w"), indent=1)
+           "note": "start values are read from the level snapshot"}, open(os.path.join(out, "meta.json"), "w", newline="\n"), indent=1)
 # the game's messages: every one is 24 characters per line, shown in the blue bar at the bottom of the screen
 def text(addr, n=24):
     return mem(lvl, addr, n).decode("latin1")
@@ -322,7 +322,7 @@ messages = {
     "ending": [text(0xE306 + 24 * k) for k in range(6)],   # 58118: eight o'clock, get up, woken yourself up, clumsy, fuel, wake up
     "finish": [text(0xE422), text(0xE43A)],        # 58402 "You're here just in time" / "WELL DONE, COLIN"
 }
-json.dump(messages, open(os.path.join(out, "messages.json"), "w"), indent=1)
+json.dump(messages, open(os.path.join(out, "messages.json"), "w", newline="\n"), indent=1)
 
 # the three tunes: the tune player ($FE08, 65032) reads notes of 4 bytes, DE (length in cycles) then HL (pitch), see port/sound.py
 def notes(addr, n):
@@ -334,7 +334,7 @@ json.dump({"start": notes(65071, 5),      # $E2BB: the fanfare before every game
            "end": notes(65091, 14),       # $E36B: after the message of every ending
            "win": notes(65147, 28),       # $E452: after the finish messages (reaching the airport with Martin)
            "house": notes(65259, 19)},    # $F863: when you leave a house
-          open(os.path.join(out, "sounds.json"), "w"))
+          open(os.path.join(out, "sounds.json"), "w", newline="\n"))
 
 # the five equipment items each draw a small picture onto the HUD's picture of the bike when found (ORed over it; $FD63 with the
 # 7-byte tail of each item record at $FB9C: column, 24 - row, pointer, width, height, ink)
@@ -342,7 +342,7 @@ hud_items = []
 for k in range(5):
     col, rowb, pl, ph, w, h, ink = mem(lvl, 0xFB9C + 57 * k + 50, 7)
     hud_items.append({"flag": 1 << k, "col": col, "row": 24 - rowb, "w": w, "h": h, "chars": mem(lvl, pl | ph << 8, w * h * 8).hex()})
-json.dump(hud_items, open(os.path.join(out, "hud_items.json"), "w"), indent=1)
+json.dump(hud_items, open(os.path.join(out, "hud_items.json"), "w", newline="\n"), indent=1)
 # Colin walking into a house: 5 frames of 2x2 chars (top row first, 32 bytes each) at $72AC, drawn by $F860 over the door cells
 open(os.path.join(out, "colin_walk.bin"), "wb").write(mem(lvl, 0x72AC, 160))
 print("objects", len(objects), "traffic", len(traffic))
@@ -352,4 +352,4 @@ print("objects", len(objects), "traffic", len(traffic))
 for name, screen in zip(("screen_ad.bin", "screen_title.bin"), game.screens):
     write(name, screen)
 write("screen_menu.bin", menu[:6912])
-json.dump({"game": os.path.basename(game.path), "loading_screens": len(game.screens)}, open(os.path.join(out, "source.json"), "w"), indent=1)
+json.dump({"game": os.path.basename(game.path), "loading_screens": len(game.screens)}, open(os.path.join(out, "source.json"), "w", newline="\n"), indent=1)
