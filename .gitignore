@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Everything taken from the original game stays out of this repository: your copy of the game,
+# what tools/extract_assets.py makes from it, and the snapshots and pictures the tools write
+game/
+Action-Biker_ZX-Spectrum_EN/
+assets/
+work/*
+!work/biker.ctl
+*.tap
+*.tzx
+*.z80
+*.sna
+*.szx
+*.png
+*.wav
+*.skool

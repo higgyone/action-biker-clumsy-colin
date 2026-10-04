@@ -1,0 +1,4 @@
+skoolkit>=10
+pygame-ce
+pillow
+numpy

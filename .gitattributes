@@ -1,0 +1,10 @@
+# Normalise line endings: LF in the repo and in working copies on every OS
+* text=auto eol=lf
+
+# Binary files must never be converted
+*.bin binary
+*.png binary
+*.z80 binary
+*.tap binary
+*.tzx binary
+*.sna binary
