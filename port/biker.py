@@ -449,8 +449,7 @@ class World:
             screen.fill((255, 140, 0), (int(x * scale), int(y * scale), 2, 2))
         if "item_markers" in self.fixes:
             for door, flags in self.houses.items():
-                cell = self.door_cell(door) if flags else None
-                if cell:
+                for cell in self.door_cells(door) if flags else ():
                     screen.fill((255, 0, 0) if flags & 32 else (255, 255, 0), (int(cell[0] * scale) - 1, int(cell[1] * scale) - 1, 4, 4))
         pygame.draw.rect(screen, (255, 255, 255), (int(cx * scale), int(cy * scale), int(VIEW_W * scale) + 1, int(VIEW_H * scale) + 1), 1)
         if int(time.monotonic() * 3) % 2 == 0:
@@ -473,26 +472,34 @@ class World:
     def toggle_markers(self):
         self.show_items = not self.show_items
 
-    def door_cell(self, door):
-        """The first map cell of a house's door marker (where the bike has to stop)."""
+    def door_cells(self, door):
+        """The top cell of every door marker with this id (where the bike stops). Usually one, but two houses can share a door id and so
+        a room: 232 is at (89, 68) and at (118, 108)."""
         cache = self.__dict__.setdefault("_door_cells", {})
         if door not in cache:
             ys, xs = (self.map == door).nonzero()
-            cache[door] = (int(xs[0]), int(ys[0])) if len(xs) else None
+            cache[door] = [(int(x), int(y)) for x, y in zip(xs, ys) if y == 0 or self.map[y - 1, x] != door]
         return cache[door]
+
+    def door_cell(self, door, near=None):
+        """The door marker of this id nearest to `near` (the first on the map without it), or None."""
+        cells = self.door_cells(door)
+        if not cells:
+            return None
+        return min(cells, key=lambda c: abs(c[0] - near[0]) + abs(c[1] - near[1])) if near else cells[0]
 
     def draw_item_markers(self, screen, cx, cy):
         """The item_markers fix: a blinking diamond on the door cell of every house that still holds items (red: Martin, cyan: the friend's mum, yellow: the rest)."""
         if int(time.monotonic() * 2) % 2:
             return
         for door, flags in self.houses.items():
-            cell = self.door_cell(door) if flags else None
-            if not cell or not (cx <= cell[0] < cx + VIEW_W and cy <= cell[1] < cy + VIEW_H):
-                continue
-            x, y = (cell[0] - cx + VIEW_X) * 8, (cell[1] - cy + VIEW_Y) * 8
-            colour = (255, 0, 0) if flags & 32 else (0, 255, 255) if flags & MUM and not flags & ~MUM else (255, 255, 0)
-            pygame.draw.polygon(screen, (0, 0, 0), [(x + 4, y - 1), (x + 9, y + 4), (x + 4, y + 9), (x - 1, y + 4)])
-            pygame.draw.polygon(screen, colour, [(x + 4, y), (x + 8, y + 4), (x + 4, y + 8), (x, y + 4)])
+            for cell in self.door_cells(door) if flags else ():
+                if not (cx <= cell[0] < cx + VIEW_W and cy <= cell[1] < cy + VIEW_H):
+                    continue
+                x, y = (cell[0] - cx + VIEW_X) * 8, (cell[1] - cy + VIEW_Y) * 8
+                colour = (255, 0, 0) if flags & 32 else (0, 255, 255) if flags & MUM and not flags & ~MUM else (255, 255, 0)
+                pygame.draw.polygon(screen, (0, 0, 0), [(x + 4, y - 1), (x + 9, y + 4), (x + 4, y + 9), (x - 1, y + 4)])
+                pygame.draw.polygon(screen, colour, [(x + 4, y), (x + 8, y + 4), (x + 4, y + 8), (x, y + 4)])
 
     def blocked(self, x, y):
         """Would the tile at (x, y) stop the bike? The same rule as hit_tile($EE75), without any of its effects."""
@@ -682,7 +689,7 @@ class World:
         if self.heading == RIGHT and self.angle == FRAME[RIGHT]:   # $F81A: facing right it calls the move-right handler ($E538) first, so the bike
             self.step(RIGHT)                           # parks a tile further on (or the view scrolls) and Colin walks in from there
         self.marker = door
-        cell = self.door_cell(door) if "easy_parking" in self.fixes else None
+        cell = self.door_cell(door, near=(self.px, self.py)) if "easy_parking" in self.fixes else None   # this door, not another with its id
         if cell and (self.px, self.py) != cell and self.footprint_free(*cell):
             self.follow_to(*cell)                      # easy parking: the bike stands on the door marker, so Colin walks up the path to the door
         here = self.houses.get(self.marker, 0)

@@ -184,6 +184,17 @@ for d in [d for d in world().houses if world().door_cell(d)][:10]:
             on_marker += w.walk is not None and (w.px, w.py) == (mx, my)
 print(f"easy_parking: {tries} stops at or next to a door, {entered} enter the house, {on_marker} with the bike on the door's marker")
 ok &= tries > 20 and entered == tries and on_marker == tries
+# ... and at a door whose id two houses share (232), the bike stays at the house it stopped at instead of jumping to the other one
+shared = [(d, c) for d in range(205, 256) for c in world().door_cells(d) if len(world().door_cells(d)) > 1]
+stays = 0
+for d, (mx, my) in shared:
+    w = world("easy_parking")
+    x = next(x for x in (mx, mx - 1, mx + 1) if w.footprint_free(x, my))
+    face(w, L, x, my, wait=0)
+    w.tick(0, True)
+    stays += w.walk is not None and (w.px, w.py) == (mx, my)
+print(f"easy_parking: shared door ids {sorted({d for d, _ in shared})}: {stays} of {len(shared)} stops stay at their own house")
+ok &= len(shared) >= 2 and stays == len(shared)
 
 # 5. item_markers
 w = world("item_markers")
