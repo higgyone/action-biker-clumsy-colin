@@ -642,6 +642,8 @@ class World:
             dx, dy = STEP[d]
             self.px += dx
             self.py += dy
+            if "breadcrumbs" in self.fixes or "map_view" in self.fixes:   # the trail goes along the nudge too, with no gap to the door
+                self.trail.setdefault((self.px, self.py), len(self.trail))
 
     def place(self, x, y):
         """Put the bike at (x, y) with the view as a new game would have it (8 tiles left of and above the bike, kept inside the map)."""

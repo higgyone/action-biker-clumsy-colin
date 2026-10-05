@@ -265,6 +265,22 @@ print(f"breadcrumbs: the stop at house {door} is remembered: {(mx, my) in w.stop
 ok &= (mx, my) in w.stops and ring >= 12
 w.new_game()
 ok &= not w.stops
+# ... and when easy parking nudges the bike onto the door's path, the tiles it moves over join the trail (no gap in the crumbs)
+gaps = 0
+for d in [d for d in world().houses if world().door_cell(d)][:10]:
+    mx, my = world().door_cell(d)
+    for dx, dy in ((1, 1), (-1, 1), (1, -1), (-1, -1), (1, 0), (-1, 0)):
+        w = world("breadcrumbs", "easy_parking")
+        if not w.footprint_free(mx + dx, my + dy):
+            continue
+        face(w, L, mx + dx, my + dy, wait=0)
+        w.trail = {(mx + dx, my + dy): 0}
+        w.tick(0, True)
+        if w.walk is not None:
+            path = list(w.trail)
+            gaps += any(abs(a[0] - b[0]) + abs(a[1] - b[1]) != 1 for a, b in zip(path, path[1:])) or path[-1] != (mx, my)
+print(f"breadcrumbs: easy parking's nudge onto the door leaves {gaps} gaps in the trail")
+ok &= gaps == 0
 # 7. map_view: Tab shows the whole map, you, where you have been and the box of the screen; the game waits meanwhile
 w = world("map_view", "breadcrumbs")
 face(w, FREE, 59, 100, speed=0)
