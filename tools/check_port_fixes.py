@@ -245,6 +245,26 @@ print(f"breadcrumbs: tiles remembered without the fix {res[False]}, with it {res
 ok &= res[False] == 0 and res[True] >= 5 and differ > 10 and orange > 10
 w.new_game()
 ok &= len(w.trail) <= 1                      # a new game starts the trail again (with the start tile)
+# ... and where the bike stopped to go into a house the crumb is bigger, with a white ring; a new game forgets them
+w = world("breadcrumbs", "easy_parking")
+door = next(d for d in w.houses if w.door_cell(d))
+mx, my = w.door_cell(door)
+face(w, L, mx, my, wait=0)
+w.tick(0, True)
+while w.walk or w.inside:
+    w.tick(0)
+for _ in range(40):
+    w.tick(1)
+w.toggle_trail()
+surf = pygame.Surface((256, 192))
+w.draw(surf)
+cx, cy = w.camera()
+sx, sy = (mx + 1 - cx + biker.VIEW_X) * 8, (my + 1 - cy + biker.VIEW_Y) * 8
+ring = sum(tuple(surf.get_at((sx + i, sy + j)))[:3] == (255, 255, 255) for i in range(-5, 6) for j in range(-5, 6))
+print(f"breadcrumbs: the stop at house {door} is remembered: {(mx, my) in w.stops}, drawn with a white ring: {ring} white pixels around it")
+ok &= (mx, my) in w.stops and ring >= 12
+w.new_game()
+ok &= not w.stops
 # 7. map_view: Tab shows the whole map, you, where you have been and the box of the screen; the game waits meanwhile
 w = world("map_view", "breadcrumbs")
 face(w, FREE, 59, 100, speed=0)

@@ -37,7 +37,7 @@ ABOUT = {                                  # shorter than the FIXES descriptions
     "quick_start": "No wait to get going, and the bike speeds up twice as fast.",
     "quick_turns": "The bike turns at once at any speed.",
     "map_view": "Tab shows the whole town: you, your trail and the part on screen. The game waits while it is up.",
-    "breadcrumbs": "B shows or hides a trail of dots where you have ridden this game.",
+    "breadcrumbs": "B shows or hides a trail of dots where you have ridden this game; a ringed dot where you went into a house.",
     "item_markers": "I shows or hides a marker on every house that still holds items.",
     "sound_effects": "The clicks, beeps and crashes. The game's timing stays the same with them off.",
     "music": "The start fanfare, the house jingle and the end tunes. The game still waits for them, silently.",

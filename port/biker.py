@@ -41,7 +41,8 @@ FIXES = {
     "quick_start": "no wait to get going: the bike moves on the pass a key is pressed from a standstill and speeds up twice as fast",
     "quick_turns": "the bike turns on the spot at any speed: a turn step never waits for the slow-speed delay between moves",
     "map_view": "press Tab to show the whole map with where you are (a blinking red dot), where you have been (the orange trail) and the part of the town on screen; the game waits while it is up",
-    "breadcrumbs": "press B to show or hide a trail of dots along every tile the bike has ridden through this game, so you can see where you have been",
+    "breadcrumbs": "press B to show or hide a trail of dots along every tile the bike has ridden through this game, so you can see where you have been; "
+                   "where you stopped to go into a house the crumb is bigger, with a white ring (on the Tab map too)",
     "item_markers": "press I to show or hide a marker above every house that still holds items (and the friend's mum)",
 }
 ITEM_POINTS = {1: 10, 2: 10, 4: 10, 8: 10, 16: 10, 32: 100, 64: 0}   # $FD63: byte 0 of each item record (Martin 100, mum 0)
@@ -311,6 +312,7 @@ class World:
         self.tea_done = None           # clock passes of the tea run so far (0-600) while a visit to the friend's mum is under way, else None
         self.traffic.map = self.map          # vehicles are not reset by a new game, only their view of the map
         self.trail = {}                # the breadcrumbs fix: every tile the bike has been on this game (in order of first visit)
+        self.stops = set()             # the breadcrumbs fix: where the bike stood when it went into a house (drawn as a bigger, white-ringed crumb)
         self.show_trail = False
         self.show_map = False          # the map_view fix: the whole-town map is up and the game is paused
         self.show_items = False        # the item_markers fix: markers above houses that still hold items (toggled with I)
@@ -447,6 +449,9 @@ class World:
         cx, cy = self.camera()
         for x, y in self.trail:
             screen.fill((255, 140, 0), (int(x * scale), int(y * scale), 2, 2))
+        for x, y in self.stops:                       # the houses visited: a white square with the orange in the middle
+            screen.fill((255, 255, 255), (int(x * scale), int(y * scale) - 1, 4, 4))
+            screen.fill((255, 140, 0), (int(x * scale) + 1, int(y * scale), 2, 2))
         if "item_markers" in self.fixes:
             for door, flags in self.houses.items():
                 for cell in self.door_cells(door) if flags else ():
@@ -455,7 +460,7 @@ class World:
         if int(time.monotonic() * 3) % 2 == 0:
             pygame.draw.circle(screen, (0, 0, 0), (int(self.px * scale) + 1, int(self.py * scale) + 1), 4)
             pygame.draw.circle(screen, (255, 0, 0), (int(self.px * scale) + 1, int(self.py * scale) + 1), 3)
-        for i, line in enumerate(("MAP", "", "RED:you", "ORANGE:", " been", "WHITE:", " screen", "", f"X {self.px}", f"Y {self.py}", "", "TAB:back")):
+        for i, line in enumerate(("MAP", "", "RED:you", "ORANGE:", " been", "WHITE:", " screen", "SQUARE:", " house", "", f"X {self.px}", f"Y {self.py}", "", "TAB:back")):
             self.draw_text(screen, line, 196, 8 + 8 * i, (255, 255, 255), (0, 0, 0))
 
     def toggle_trail(self):
@@ -466,8 +471,13 @@ class World:
         for x, y in self.trail:
             sx, sy = (x + 1 - cx + VIEW_X) * 8, (y + 1 - cy + VIEW_Y) * 8
             if VIEW_X * 8 + 2 < sx < (VIEW_X + VIEW_W) * 8 - 2 and VIEW_Y * 8 + 2 < sy < (VIEW_Y + VIEW_H) * 8 - 2:
-                pygame.draw.circle(screen, (0, 0, 0), (sx, sy), 3)
-                pygame.draw.circle(screen, (255, 140, 0), (sx, sy), 2)
+                if (x, y) in self.stops:            # a house visit: a bigger crumb with a white ring
+                    pygame.draw.circle(screen, (0, 0, 0), (sx, sy), 5)
+                    pygame.draw.circle(screen, (255, 255, 255), (sx, sy), 4)
+                    pygame.draw.circle(screen, (255, 140, 0), (sx, sy), 3)
+                else:
+                    pygame.draw.circle(screen, (0, 0, 0), (sx, sy), 3)
+                    pygame.draw.circle(screen, (255, 140, 0), (sx, sy), 2)
 
     def toggle_markers(self):
         self.show_items = not self.show_items
@@ -692,6 +702,8 @@ class World:
         cell = self.door_cell(door, near=(self.px, self.py)) if "easy_parking" in self.fixes else None   # this door, not another with its id
         if cell and (self.px, self.py) != cell and self.footprint_free(*cell):
             self.follow_to(*cell)                      # easy parking: the bike stands on the door marker, so Colin walks up the path to the door
+        if "breadcrumbs" in self.fixes or "map_view" in self.fixes:
+            self.stops.add((self.px, self.py))
         here = self.houses.get(self.marker, 0)
         found = [ITEM_NAMES[f] for f in ITEM_POINTS if here & f]
         self.score += 3 + sum(pts for f, pts in ITEM_POINTS.items() if here & f)
