@@ -304,6 +304,11 @@ red = tuple(surf.get_at((int(here[0] * scale) + 1, int(here[1] * scale) + 1)))[:
 orange = sum(1 for yy in range(192) for xx in range(192) if tuple(surf.get_at((xx, yy)))[:3] == (255, 140, 0))
 white = sum(1 for yy in range(192) for xx in range(192) if tuple(surf.get_at((xx, yy)))[:3] == (255, 255, 255))
 print(f"map_view: game paused while the map is up {paused}; you at {here} drawn {red}; {orange} trail pixels, {white} frame pixels")
+edge_x, edge_y = int((biker.DARK_X + 1) * scale), int((biker.DARK_Y + 1) * scale)
+pink_v = sum(tuple(surf.get_at((edge_x, yy)))[:3] == (255, 0, 255) for yy in range(edge_y, 192))
+pink_h = sum(tuple(surf.get_at((xx, edge_y)))[:3] == (255, 0, 255) for xx in range(0, edge_x))
+print(f"map_view: the dark area's edge drawn along x {edge_x} ({pink_v} pixels) and y {edge_y} ({pink_h} pixels)")
+ok &= pink_v > 10 and pink_h > 10
 w.toggle_map()
 for _ in range(30):                                       # back in the game the bike rides on
     w.wait = 0

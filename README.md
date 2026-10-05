@@ -65,7 +65,7 @@ then press **Enter** to play. A joystick works too. Your choice is remembered fo
 | 5 | Turn assist | a turn onto a side road pressed a tile or two early or late still works: the bike carries on to the junction, or slides across a tile, then turns |
 | 6 | Quick start | no wait to get going from a standstill, and the bike speeds up twice as fast |
 | 7 | Quick turns | the bike turns at once at any speed, instead of waiting between turn steps when slow |
-| 8 | Map view | **Tab** shows the whole town: you as a blinking red dot, your trail, and the part on screen. The game waits while it is up |
+| 8 | Map view | **Tab** shows the whole town: you as a blinking red dot, your trail, the part on screen, and the edge of the dark area (dashed pink). The game waits while it is up |
 | 9 | Breadcrumbs | **B** shows or hides a trail of dots wherever you have ridden this game; where you stopped to go into a house the dot is bigger, with a white ring (a white square on the Tab map) |
 | 0 | Item markers | **I** shows or hides a marker on every house that still holds something (red: Martin, cyan: the friend's mum, yellow: the rest) |
 

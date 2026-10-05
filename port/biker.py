@@ -456,11 +456,17 @@ class World:
             for door, flags in self.houses.items():
                 for cell in self.door_cells(door) if flags else ():
                     screen.fill((255, 0, 0) if flags & 32 else (255, 255, 0), (int(cell[0] * scale) - 1, int(cell[1] * scale) - 1, 4, 4))
+        # the dark area: map x 0 to DARK_X, y DARK_Y + 1 to 127 (the original's own test, $F0B4), outlined in bright magenta, dashed
+        x1, y0, y1 = int((DARK_X + 1) * scale), int((DARK_Y + 1) * scale), 191
+        for k in range(0, x1, 4):
+            pygame.draw.line(screen, (255, 0, 255), (k, y0), (min(k + 1, x1), y0))
+        for k in range(y0, y1 + 1, 4):
+            pygame.draw.line(screen, (255, 0, 255), (x1, k), (x1, min(k + 1, y1)))
         pygame.draw.rect(screen, (255, 255, 255), (int(cx * scale), int(cy * scale), int(VIEW_W * scale) + 1, int(VIEW_H * scale) + 1), 1)
         if int(time.monotonic() * 3) % 2 == 0:
             pygame.draw.circle(screen, (0, 0, 0), (int(self.px * scale) + 1, int(self.py * scale) + 1), 4)
             pygame.draw.circle(screen, (255, 0, 0), (int(self.px * scale) + 1, int(self.py * scale) + 1), 3)
-        for i, line in enumerate(("MAP", "", "RED:you", "ORANGE:", " been", "WHITE:", " screen", "SQUARE:", " house", "", f"X {self.px}", f"Y {self.py}", "", "TAB:back")):
+        for i, line in enumerate(("MAP", "", "RED:you", "ORANGE:", " been", "WHITE:", " screen", "SQUARE:", " house", "PINK:", " dark", " area", "", f"X {self.px}", f"Y {self.py}", "", "TAB:back")):
             self.draw_text(screen, line, 196, 8 + 8 * i, (255, 255, 255), (0, 0, 0))
 
     def toggle_trail(self):
