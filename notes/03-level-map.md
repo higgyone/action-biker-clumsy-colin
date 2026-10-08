@@ -428,10 +428,11 @@ from right +1, from down +1), and when the heading already is the asked-for way 
 come from facing left, asked to go right: it goes the long way round through 0, 1, 2, 3 to 4.
 
 ### Title screens and the Select Controls menu (decoded)
-Before the game the tape shows **two loading screens** (the 6912-byte blocks 3 and 5: the KP Skips advert, then the Action Biker / M J CHILD title) and the game
+Before the game the tape shows **three loading screens**: the loader (a BASIC stub, then a 7020-byte block read to `$5B00`) copies each screen image to the display with an `LDIR` as it arrives. In tape order: **(1) the cover** ("MASTERTRONIC", KP Skips, "Action Biker", "Clumsy Colin"), the first 6912 bytes of the 7020-byte block (the last 108 bytes are the loader's own code); **(2) the KP Skips advert** (the 6912-byte block 4); **(3) the Action Biker / M J CHILD title** (block 6). The 17500- and 17000-byte blocks between them are game code and data. (The first version of the port showed only 2 and 3, because the cover's block is not exactly 6912 bytes.) The game then asks for the controls with the menu routine at `$DD77` (56695)
+
 then asks for the controls with the menu routine at `$DD77` (56695): it draws "Select Controls" and the five lines (`$DF20`, 57120; the original spells the last one
 "CURSER") and waits for key 1-5 (row `$F7FE`, bits 0-4). The menu screen is ordinary screen memory, so the port stores it as `assets/screen_menu.bin` (with
-`screen_ad.bin` and `screen_title.bin`, all written by `tools/extract_assets.py`).
+`screen_cover.bin`, `screen_ad.bin` and `screen_title.bin`, all written by `tools/extract_assets.py`). **The border**: the menu starts by setting the border to blue (`LD A,1 / OUT (254),A` at `$DD77`) and nothing in the game changes it afterwards (every gameplay snapshot has a blue border); the loading screens are shown with the ROM's border colour, white. The port draws a 16-pixel border in those colours (black on its own setup screen).
 
 The choice **patches the key-reading routine** `$DFA8` (57256), which tests five inputs in the order left, right, up, down, fire with
 `LD A,row / IN A,($FE) / AND mask / CALL Z`: key 1 Keyboard writes the rows and masks of N, M, A, Z, Space; 2 Kempston changes the IN port to 31 and the CALLs to `CALL NZ`

@@ -20,6 +20,10 @@ CAM_MAX = 128 - 18                 # the camera stops here (the move handlers co
 VIEW_W, VIEW_H = 18, 18          # viewport in tiles: 18x18 chars at char (1,1) of the 32x24 screen ($DF61 clears it)
 VIEW_X, VIEW_Y = 1, 1
 SCALE = 4
+BORDER = 16                       # pixels of border round the Spectrum's 256 x 192 screen (the real one is wider)
+BORDER_LOADING = (205, 205, 205)  # white: the colour the ROM's tape loader leaves the border at ($0556 restores it from $5C48), as the three loading screens show
+BORDER_GAME = (0, 0, 205)         # blue: Select Controls ($DD77) sets the border to 1 and the game never changes it (in every snapshot of the game the border is blue)
+BORDER_SETUP = (0, 0, 0)          # the port's own setup screen
 PASS_HZ = 19.5                   # game passes per second, measured: a frame (two passes) takes about 102 ms (357,000 T-states at 3.5 MHz) in the original,
                                  # stopped or at full speed; nothing syncs it to the 50 Hz interrupt
 FUEL_CANS = [(111, 19), (103, 51), (23, 76)]   # fixed fuel can spots ($E46D); they come back every 300 passes
@@ -1089,7 +1093,7 @@ def main(argv=None):
     parser.add_argument("--fixes", action="store_true", help="play the version with every fix on")
     parser.add_argument("--fix", action="append", default=[], metavar="NAME", choices=sorted(FIXES), help="turn one fix on (repeatable)")
     parser.add_argument("--list-fixes", action="store_true", help="list the fixes and exit")
-    parser.add_argument("--no-intro", action="store_true", help="skip the setup screen, the two loading screens and Select Controls (keyboard controls)")
+    parser.add_argument("--no-intro", action="store_true", help="skip the setup screen, the three loading screens and Select Controls (keyboard controls)")
     parser.add_argument("--controls", choices=sorted(controls.SCHEMES), help="choose the control scheme without the menu (skips the setup screen too)")
     parser.add_argument("--no-sound-effects", action="store_true", help="no sound effects (the setup screen starts with them unticked)")
     parser.add_argument("--no-music", action="store_true", help="no music (the setup screen starts with it unticked)")
@@ -1107,7 +1111,15 @@ def main(argv=None):
     asked = args.fixes or bool(args.fix) or bool(quiet)   # given on the command line: the setup screen starts from that, else from last time
     pygame.init()
     screen = pygame.Surface((256, 192))
-    window = pygame.display.set_mode((256 * SCALE, 192 * SCALE))
+    window = pygame.display.set_mode(((256 + 2 * BORDER) * SCALE, (192 + 2 * BORDER) * SCALE))
+    frame = pygame.Surface((256 + 2 * BORDER, 192 + 2 * BORDER))
+
+    def present(colour):
+        """Show `screen` in its border: the border colour fills the frame, the screen sits in the middle."""
+        frame.fill(colour)
+        frame.blit(screen, (BORDER, BORDER))
+        pygame.transform.scale(frame, window.get_size(), window)
+
     pygame.display.set_caption("Action Biker")
     try:
         sound = Sound(json.load(open(os.path.join(A, "sounds.json"))))
@@ -1115,11 +1127,11 @@ def main(argv=None):
         print("no sound:", error)
         sound = None
     # The port starts with a screen the original does not have, a setup screen (port/options.py) where the trainer, the fixes and the sound are
-    # turned on or off. Then, as the tape does: two loading screens (the KP Skips advert, then the title), Select Controls ($DD77), and the game.
+    # turned on or off. Then, as the tape does: three loading screens (the cover, the KP Skips advert, then the title), Select Controls ($DD77), and the game.
     scheme = args.controls or ("KEYBOARD" if args.no_intro else None)
     menu = None if scheme else options.OptionsScreen(FIXES, load("font.bin"), *((fixes, set(options.SOUND) - quiet) if asked else (None, None)))
     stick = controls.Controls("KEYBOARD") if menu else None      # only its joystick is read on the setup screen; keys come as key presses
-    shots = [] if args.no_intro or args.controls else [screen_surface(load(n)) for n in ("screen_ad.bin", "screen_title.bin")
+    shots = [] if args.no_intro or args.controls else [screen_surface(load(n)) for n in ("screen_cover.bin", "screen_ad.bin", "screen_title.bin")
                                                          if os.path.exists(os.path.join(A, n))]   # assets made from a .z80 have no loading screens
     menu_screen = screen_surface(load("screen_menu.bin"))
     world, pad, shown = None, None, 0.0
@@ -1171,7 +1183,7 @@ def main(argv=None):
                 menu.pad(*stick.read(NO_KEYS))
             clock.tick(50)
             menu.draw(screen)
-            pygame.transform.scale(screen, window.get_size(), window)
+            present(BORDER_SETUP)
             pygame.display.set_caption("Action Biker (setup)")
             pygame.display.flip()
             continue
@@ -1202,7 +1214,7 @@ def main(argv=None):
                 world.draw_paused(screen)
             pygame.display.set_caption(f"Action Biker ({mode}, {pad.name.lower()}){'  [I] item markers' if 'item_markers' in fixes else ''}{'  [B] breadcrumbs' if 'breadcrumbs' in fixes else ''}{'  [Tab] map' if 'map_view' in fixes else ''}  speed {10 - world.speed}  fuel {world.fuel}  sleep {world.sleep}  "
                                        f"items {world.items:07b}  score {world.score}  {world.message}" + (f"  - {world.over}" if world.over else ""))
-        pygame.transform.scale(screen, window.get_size(), window)
+        present(BORDER_LOADING if world is None and shots else BORDER_GAME)
         pygame.display.flip()
     pygame.quit()
 

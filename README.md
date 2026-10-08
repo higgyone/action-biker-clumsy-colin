@@ -26,7 +26,7 @@ On top of that, a setup screen turns on optional fixes and a trainer, and switch
 You need **your own copy of the original game**. This project contains none of it: `tools/extract_assets.py` reads the graphics, map,
 sounds and texts out of your copy into `assets/`, and the port plays from those. It works with:
 
-- a **`.tzx` or `.tap`** tape image (best: it also gives the two loading screens), or
+- a **`.tzx` or `.tap`** tape image (best: it also gives the three loading screens), or
 - a **`.z80`** snapshot saved at the game's Select Controls menu, before a game has been played,
 - or a `.zip` holding one of them.
 

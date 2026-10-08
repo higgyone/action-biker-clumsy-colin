@@ -4,7 +4,7 @@
     game = Original("path/to/Action Biker.tap")      # or .tzx, or .z80 saved at the Select Controls menu, or a .zip holding one of them
     game.menu    # 48K RAM (bytes, $4000-$FFFF) at the Select Controls menu, before any game: the clean map, the tape's traffic table
     game.level   # 48K RAM after key 1 and the game's own start-up ($D858), at the main loop: items placed, the HUD drawn
-    game.screens # the tape's two loading screens (6912 bytes each), or [] for a snapshot
+    game.screens # the tape's three loading screens (6912 bytes each, in the order they appear), or [] for a snapshot
     snapshot("level")  # a .z80 path of that moment for the checks: work/biker_level.z80 if it exists (the ZEsarUX one), else
                        # work/_tmp/level.z80, made from your copy of the game when missing (likewise "menu": work/biker.z80)
 
@@ -137,7 +137,9 @@ class Original:
         name, data = unzip(path)
         os.makedirs(TMP, exist_ok=True)
         if name.lower().endswith((".tap", ".tzx")):
-            self.screens = [b[1:6913] for b in tape_blocks(name, data) if len(b) == 6914 and b[0] == 255]
+            # the loader (BASIC, then a 7020-byte block at $5B00) shows three screens: the first is the first 6912 bytes of that 7020-byte block (the rest is
+            # the loader's own code, which copies the screen to the display), the other two are blocks of exactly 6912 bytes
+            self.screens = [b[1:6913] for b in tape_blocks(name, data) if b[0] == 255 and len(b) in (6914, 7022)]
             tape = os.path.join(TMP, "original" + os.path.splitext(name)[1].lower())
             open(tape, "wb").write(data)
             snap = os.path.join(TMP, "original.z80")

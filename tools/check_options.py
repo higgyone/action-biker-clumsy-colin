@@ -2,7 +2,7 @@
 
 Usage: python tools/check_options.py      (run from the repo root)
 
-1. On the setup screen tick 2 and 9 (infinite fuel, breadcrumbs) and untick S (sound effects), Enter; skip the two loading screens and choose
+1. On the setup screen tick 2 and 9 (infinite fuel, breadcrumbs) and untick S (sound effects), Enter; skip the three loading screens and choose
    keyboard controls (1): the game starts with those two fixes, and the saved choice has the sound effects off and the music on.
 2. A second run with just Enter starts with the same choice.
 3. --fix map_view starts the setup screen with only that line ticked (and the sound on), whatever was saved.
@@ -49,7 +49,7 @@ def run(keys, argv=()):
     return sorted(made[0].fixes) if made else None
 
 
-START = [pygame.K_RETURN, pygame.K_SPACE, pygame.K_SPACE, pygame.K_1]    # Enter on the setup screen, skip the two loading screens, keyboard
+START = [pygame.K_RETURN, pygame.K_SPACE, pygame.K_SPACE, pygame.K_SPACE, pygame.K_1]    # Enter on the setup screen, skip the three loading screens, keyboard
 first = run([pygame.K_2, pygame.K_9, pygame.K_s] + START)
 saved = json.load(open(options.SAVED))
 print("1. lines 2 and 9 ticked, S unticked:", first, saved)

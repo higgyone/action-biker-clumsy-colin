@@ -28,7 +28,7 @@ Writes to assets/:
   hud_items.json   the five equipment pictures ORed onto the HUD bike picture (headlamp, tyres, snorkel, periscope, Turbo kit)
   colin_walk.bin   5 frames x 32 bytes: Colin walking into a house (shown before the room appears)
   sounds.json      the four tunes (start-up fanfare, end of game, finish, leaving a house) as [DE, HL] notes for the ROM's BEEP
-  screen_ad.bin, screen_title.bin, screen_menu.bin   the two loading screens of the tape (the KP Skips advert, then the Action Biker title) and the
+  screen_cover.bin, screen_ad.bin, screen_title.bin, screen_menu.bin   the three loading screens of the tape (the Mastertronic / KP Skips / Clumsy Colin cover, the KP Skips advert, then the Action Biker title) and the
                    Select Controls screen (the menu's screen memory), each 6912 bytes: pixels then attributes (no loading screens from a .z80)
   messages.json    every on-screen message, 24 characters per line (items, pickups, dark area, endings)
   meta.json        addresses and start state (player, camera, SLEEP) for reference; source.json which game file the assets came from
@@ -347,9 +347,9 @@ json.dump(hud_items, open(os.path.join(out, "hud_items.json"), "w", newline="\n"
 open(os.path.join(out, "colin_walk.bin"), "wb").write(mem(lvl, 0x72AC, 160))
 print("objects", len(objects), "traffic", len(traffic))
 
-# the screens before the game: the tape's two 6912-byte blocks are the loading screens (1: KP Skips advert, 2: title); the controls menu is
+# the screens before the game: the tape's three loading screens (1: the cover, from the loader's 7020-byte block; 2: KP Skips advert; 3: title); the controls menu is
 # drawn by the game itself, so it is the menu's screen memory. A .z80 has no loading screens (the port skips them when the files are missing).
-for name, screen in zip(("screen_ad.bin", "screen_title.bin"), game.screens):
+for name, screen in zip(("screen_cover.bin", "screen_ad.bin", "screen_title.bin"), game.screens):
     write(name, screen)
 write("screen_menu.bin", menu[:6912])
 json.dump({"game": os.path.basename(game.path), "loading_screens": len(game.screens)}, open(os.path.join(out, "source.json"), "w", newline="\n"), indent=1)
