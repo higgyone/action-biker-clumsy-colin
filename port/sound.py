@@ -7,9 +7,9 @@ and ends with a longer wait of 255 x 256 loops (about 0.24 s). Notes: notes/03-l
 samples() builds every sound as an int16 array and needs only numpy, so it can be tested without a sound card.
 """
 import numpy as np
+from zxport import beeper
+from zxport.beeper import RATE, VOLUME, beep, beep_seconds, frequency, silence   # noqa: F401  (the ROM BEEP, shared with other ports)
 
-RATE = 44100
-VOLUME = 0.25
 NOTE_GAP = 12 * 256 * 13 / 3_500_000       # seconds: the pause after every note of a tune
 TUNE_TAIL = 255 * 256 * 13 / 3_500_000     # seconds: the wait at the end of a tune
 FLASH = 0.0072                             # seconds the play-area flash ($D99B, 25,000 T-states) takes after each of the crash's two beeps
@@ -24,31 +24,9 @@ BEEPS = {
 }
 
 
-def frequency(hl):
-    return 437500.0 / (hl + 30.125)
-
-
-def beep_seconds(hl, de):
-    return de / frequency(hl)
-
-
-def silence(seconds):
-    return np.zeros(max(0, round(RATE * seconds)), dtype=np.int16)
-
-
-def beep(hl, de, volume=VOLUME):
-    f = frequency(hl)
-    n = max(1, round(RATE * de / f))
-    phase = (np.arange(n) / RATE * f) % 1.0
-    return (np.where(phase < 0.5, 1.0, -1.0) * volume * 32767).astype(np.int16)
-
-
 def tune(notes):
-    parts = []
-    for de, hl in notes:
-        parts += [beep(hl, de), silence(NOTE_GAP)]
-    parts.append(silence(TUNE_TAIL))
-    return np.concatenate(parts)
+    """A tune from the game's notes, (DE, HL) pairs as $FE08 reads them, with its gaps."""
+    return beeper.tune([(hl, de) for de, hl in notes], NOTE_GAP, TUNE_TAIL)
 
 
 def tune_seconds(notes):

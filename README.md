@@ -97,6 +97,9 @@ one, and `tools/compare_original.py` checks that with no fixes the game still pl
 ## Layout
 
 - `port/` the pygame game: `biker.py` (game, HUD, main loop), `traffic.py`, `sound.py`, `controls.py`, `options.py` (the setup screen)
+- `zxport` the Spectrum basics shared with other ports (colours, screen pictures, the window, pacing, the beeper; `notes/05-shared-runtime.md`):
+  in the public copy it is `port/zxport/`; working from the private repository it comes from `zx-port-kit` cloned next to this one
+  (`-e ../zx-port-kit` in `requirements.txt`)
 - `tools/` `extract_assets.py` (writes `assets/` from your copy of the game), `original.py` (loads your copy in the simulator), the
   `check_*.py` and `compare_original.py` checks against the original, and helpers (`tilemap.py`, `render_map.py`, `make_patched_game.py`, ...)
 - `assets/` everything the port loads, made by `tools/extract_assets.py`

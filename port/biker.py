@@ -14,6 +14,8 @@ from traffic import Traffic
 from sound import Sound   # noqa: F401  (main() builds one)
 import controls
 import options
+from zxport.screen import PALETTE, Screen, screen_from_bytes
+from zxport.window import Pacer, Window
 
 A = os.path.join(os.path.dirname(__file__), "..", "assets")
 CAM_MAX = 128 - 18                 # the camera stops here (the move handlers compare it with 110)
@@ -84,8 +86,8 @@ def load(name):
 
 
 def rgb(index, bright):
-    level = 255 if bright else 205
-    return (level if index & 2 else 0, level if index & 4 else 0, level if index & 1 else 0)
+    """A Spectrum colour (0-7, bright or not) as (r, g, b)."""
+    return PALETTE[index + 8 * bool(bright)]
 
 
 def char_surface(data, attr):
@@ -1063,17 +1065,7 @@ def invert_colours(screen, rect):
 
 def screen_surface(data):
     """A 256x192 surface from a 6912-byte Spectrum screen (pixels then attributes; FLASH is ignored)."""
-    s = pygame.Surface((256, 192))
-    for cy in range(24):
-        for cx in range(32):
-            attr = data[6144 + cy * 32 + cx]
-            ink, paper = rgb(attr & 7, bool(attr & 0x40)), rgb((attr >> 3) & 7, bool(attr & 0x40))
-            for r in range(8):
-                y = cy * 8 + r
-                byte = data[((y & 0xC0) << 5) + ((y & 7) << 8) + ((y & 0x38) << 2) + cx]
-                for bit in range(8):
-                    s.set_at((cx * 8 + bit, y), ink if byte & (0x80 >> bit) else paper)
-    return s
+    return Screen(*screen_from_bytes(data)).to_surface()
 
 
 class _NoKeys:
@@ -1111,16 +1103,12 @@ def main(argv=None):
     asked = args.fixes or bool(args.fix) or bool(quiet)   # given on the command line: the setup screen starts from that, else from last time
     pygame.init()
     screen = pygame.Surface((256, 192))
-    window = pygame.display.set_mode(((256 + 2 * BORDER) * SCALE, (192 + 2 * BORDER) * SCALE))
-    frame = pygame.Surface((256 + 2 * BORDER, 192 + 2 * BORDER))
+    window = Window("Action Biker", SCALE, BORDER)
 
     def present(colour):
-        """Show `screen` in its border: the border colour fills the frame, the screen sits in the middle."""
-        frame.fill(colour)
-        frame.blit(screen, (BORDER, BORDER))
-        pygame.transform.scale(frame, window.get_size(), window)
+        """Show `screen` in its border, and put it on the display."""
+        window.show_surface(screen, colour)
 
-    pygame.display.set_caption("Action Biker")
     try:
         sound = Sound(json.load(open(os.path.join(A, "sounds.json"))))
     except Exception as error:                     # no sound card: play silently
@@ -1135,8 +1123,9 @@ def main(argv=None):
                                                          if os.path.exists(os.path.join(A, n))]   # assets made from a .z80 have no loading screens
     menu_screen = screen_surface(load("screen_menu.bin"))
     world, pad, shown = None, None, 0.0
-    clock = pygame.time.Clock()
-    acc, running, paused = 0.0, True, False
+    clock = pygame.time.Clock()                  # the screens before the game
+    pacer = Pacer(PASS_HZ)                       # the game's passes
+    running, paused = True, False
 
     def start_sound(on):
         if sound:
@@ -1153,8 +1142,7 @@ def main(argv=None):
                     paused = not paused
                     if sound:
                         (pygame.mixer.pause if paused else pygame.mixer.unpause)()
-                    clock.tick()                          # the time spent paused is not caught up afterwards
-                    acc = 0.0
+                    pacer.reset()                         # the time spent paused is not caught up afterwards
             elif paused:
                 pass                                      # nothing else while paused
             elif e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:   # before the game (setup, loading screens, controls): Esc quits
@@ -1183,16 +1171,14 @@ def main(argv=None):
                 menu.pad(*stick.read(NO_KEYS))
             clock.tick(50)
             menu.draw(screen)
-            present(BORDER_SETUP)
             pygame.display.set_caption("Action Biker (setup)")
-            pygame.display.flip()
+            present(BORDER_SETUP)
             continue
         mode = "original" if not fixes else "fixes: " + ", ".join(sorted(fixes))
         if scheme is not None and world is None:           # the choice is made: a new game (its fanfare plays first)
             pad = controls.Controls(scheme)
             world = World(sound, fixes)
-            acc = 0.0
-            clock.tick()
+            pacer.reset()
         if world is None:
             if shots:
                 shown += clock.tick(50) / 1000
@@ -1205,17 +1191,15 @@ def main(argv=None):
             pygame.display.set_caption(f"Action Biker ({mode})")
         else:
             mask, fire = pad.read(pygame.key.get_pressed())
-            acc += clock.tick(50) / 1000 * PASS_HZ
-            while acc >= 1 and not paused:
-                world.tick(mask, fire)
-                acc -= 1
+            for _ in range(pacer.passes()):              # at the original's rate, PASS_HZ (none while paused)
+                if not paused:
+                    world.tick(mask, fire)
             world.draw(screen)
             if paused:                                    # not in the original: the port's pause (P or Esc)
                 world.draw_paused(screen)
             pygame.display.set_caption(f"Action Biker ({mode}, {pad.name.lower()}){'  [I] item markers' if 'item_markers' in fixes else ''}{'  [B] breadcrumbs' if 'breadcrumbs' in fixes else ''}{'  [Tab] map' if 'map_view' in fixes else ''}  speed {10 - world.speed}  fuel {world.fuel}  sleep {world.sleep}  "
                                        f"items {world.items:07b}  score {world.score}  {world.message}" + (f"  - {world.over}" if world.over else ""))
         present(BORDER_LOADING if world is None and shots else BORDER_GAME)
-        pygame.display.flip()
     pygame.quit()
 
 

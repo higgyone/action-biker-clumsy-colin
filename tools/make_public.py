@@ -4,7 +4,7 @@ Usage: python tools/make_public.py [DEST]        (run from the repo root; defaul
                                                   github.com/higgyone/action-biker-clumsy-colin)
 
 Copies the tracked files that are this project's own work (port/, tools/, notes/, work/biker.ctl, README.md, requirements.txt and the git
-settings) into DEST, leaving out everything taken from the game: the tape and snapshot files, assets/ (graphics, map, sounds, texts),
+settings) into DEST, with the modules of zx-port-kit's zxport/ that the port imports, as port/zxport/ (and requirements.txt without the kit's line), leaving out everything taken from the game: the tape and snapshot files, assets/ (graphics, map, sounds, texts),
 the disassembly (work/biker.skool), the ZEsarUX snapshots, the patched tapes, the exported sounds and every picture. The README's
 "private repository" paragraph is replaced by the public one, and the .gitignore keeps the game's files out of the public repository
 when someone extracts their own. DEST is cleared first (except its .git folder), so it can be a clone of the public repository: build,
@@ -19,6 +19,8 @@ import sys
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 os.chdir(ROOT)
 DEST = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "..", "action-biker-clumsy-colin"))
+ZXPORT = os.path.join(ROOT, "..", "zx-port-kit", "zxport")   # the shared run-time package, copied in as port/zxport/
+KIT_LINE = "-e ../zx-port-kit"                              # dropped from the public requirements.txt
 
 KEEP_DIRS = ("port/", "tools/", "notes/")
 KEEP_FILES = ("README.md", "requirements.txt", ".gitattributes", "work/biker.ctl")
@@ -112,6 +114,15 @@ def main():
         dst = os.path.join(DEST, f)
         os.makedirs(os.path.dirname(dst) or DEST, exist_ok=True)
         shutil.copyfile(f, dst)
+    if not os.path.isdir(ZXPORT):
+        sys.exit(f"stopped: zxport isn't at {ZXPORT}: clone zx-port-kit next to this repo")
+    sys.path.insert(0, os.path.join(ZXPORT, "..", "tools"))
+    from make_public import copy_kit                  # the kit's: only the zxport modules the port imports
+    kit = copy_kit([["zxport", os.path.join(DEST, "port", "zxport")]], [os.path.join(DEST, f) for f in files])
+    files += [os.path.relpath(f, DEST).replace(os.sep, "/") for f in kit]
+    req = os.path.join(DEST, "requirements.txt")
+    lines = [line for line in open(req).read().splitlines() if line.strip() != KIT_LINE]
+    open(req, "w", newline="\n").write("\n".join(lines) + "\n")
     readme = open(os.path.join(DEST, "README.md"), encoding="utf-8").read().replace("\r\n", "\n")
     if PRIVATE not in readme:
         sys.exit("stopped: the README's private paragraph has changed; update PRIVATE in tools/make_public.py")
