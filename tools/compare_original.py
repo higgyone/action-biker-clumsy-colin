@@ -3,7 +3,7 @@
 Usage: python tools/compare_original.py [SCRIPTS [FRAMES]]      (run from the repo root; default 3 scripts of 250 frames)
 
 The original (the tape's own code, started through the controls menu in SkoolKit's Z80 simulator, work/_tmp/original.z80 made by
-tools/check_patched_game.py) and the port (default mode, no fixes, silent) are given the same keys on every frame: random runs of a direction held for
+tools/original.py) and the port (default mode, no fixes, silent) are given the same keys on every frame: random runs of a direction held for
 a few frames, or nothing. After every frame (two passes) the script compares what the player would see and feel: the bike's tile, view, speed counter,
 heading and sprite frame, SLEEP, score, items, the clock, the fuel accumulator, the seed and all 20 vehicles. Passes the port spends standing still while
 a message or crash routine runs (the original does that inside one pass) are not counted. Stops a script when SLEEP gets low (the ending routines are long).

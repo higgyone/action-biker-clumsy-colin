@@ -1,9 +1,10 @@
-"""Action Biker port, skeleton: scrolling map, player with 4-way movement, scrolling traffic.
+"""Action Biker port: the game (World), its message bar (Bar), the HUD and the main loop.
 
-Run from the repo root:  .venv/Scripts/python port/biker.py      (needs assets/ from tools/extract_assets.py)
-The two loading screens and the Select Controls menu come first (1-5 picks Keyboard N M A Z Space, Kempston, Sinclair 6 7 9 8 0, Fuller, Cursor 5 8 7 6 Space;
-the arrow keys and Space always work too); Esc quits. Options: --fixes, --fix NAME, --list-fixes, --no-intro, --controls NAME. The pass rate (PASS_HZ) is the original's measured speed (notes/03); the traffic follows the
-original's movement rules (port/traffic.py).
+Run from the repo root:  python port/biker.py      (needs assets/ from tools/extract_assets.py)
+The setup screen (port/options.py), the three loading screens and the Select Controls menu come first (1-5 picks Keyboard N M A Z Space,
+Kempston, Sinclair 6 7 9 8 0, Fuller, Cursor 5 8 7 6 Space; the arrow keys and Space always work too); Esc quits. Options: --fixes,
+--fix NAME, --list-fixes, --no-intro, --controls NAME, --no-sound-effects, --no-music. The pass rate (PASS_HZ) is the original's measured
+speed (notes/03); the traffic follows the original's movement rules (port/traffic.py).
 """
 import json
 import os
@@ -11,7 +12,7 @@ import time
 import numpy as np
 import pygame
 from traffic import Traffic
-from sound import Sound   # noqa: F401  (main() builds one)
+from sound import Sound
 import controls
 import options
 from zxport.screen import PALETTE, Screen, screen_from_bytes
@@ -19,7 +20,7 @@ from zxport.window import Pacer, Window
 
 A = os.path.join(os.path.dirname(__file__), "..", "assets")
 CAM_MAX = 128 - 18                 # the camera stops here (the move handlers compare it with 110)
-VIEW_W, VIEW_H = 18, 18          # viewport in tiles: 18x18 chars at char (1,1) of the 32x24 screen ($DF61 clears it)
+VIEW_W, VIEW_H = 18, 18          # viewport in tiles: 18x18 chars at char (1,1) of the 32x24 screen ($DF67 clears it)
 VIEW_X, VIEW_Y = 1, 1
 SCALE = 4
 BORDER = 16                       # pixels of border round the Spectrum's 256 x 192 screen (the real one is wider)
@@ -102,6 +103,7 @@ def char_surface(data, attr):
 
 
 def sprite(chars, w, h, attr):
+    """A w x h char surface from row-major chars, all in one attribute."""
     s = pygame.Surface((w * 8, h * 8))
     for k in range(w * h):
         s.blit(char_surface(chars[8 * k:8 * k + 8], attr), ((k % w) * 8, (k // w) * 8))
@@ -166,6 +168,8 @@ class Bar:
 
 
 class World:
+    """The game's state and rules, one pass at a time (tick), and its picture (draw). sound: a sound.Sound or None; fixes: names from FIXES."""
+
     def __init__(self, sound=None, fixes=()):
         self.base_map = np.frombuffer(load("map.bin"), dtype=np.uint8).reshape(128, 128).copy()
         self.map = self.base_map.copy()
@@ -229,6 +233,7 @@ class World:
             self.pre.blit(self.tile_img[first + k], (cx * 8, cy * 8))
 
     def clear_object(self, x, y):
+        """Remove the 2x2 object at map cell (x, y)."""
         for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
             self.map[y + dy, x + dx] = 0
             self.pre.fill((0, 0, 0), ((x + dx) * 8, (y + dy) * 8, 8, 8))
@@ -240,6 +245,7 @@ class World:
         return self.seed & 0xFF
 
     def cell(self, idx):
+        """Tile id at map address idx (128 * y + x); off the map counts as 1 (taken)."""
         return int(self.map[idx >> 7, idx & 127]) if 0 <= idx < 16384 else 1
 
     def place_random(self, first, count):
@@ -568,7 +574,7 @@ class World:
             self.skid_from = self.angle
             self.after(self.bar.steps[4][0], self.lose_sleep)
             self.snd_seq("tick", 16, SKID_STEP, self.bar.steps[1][0] / PASS_HZ)   # every redraw of the bike clicks
-        elif t == 198:                       # fuel can: the message, the gauge refills a click at a time, a pause, off ($F0D7)
+        elif t == 198:                       # fuel can: the message, the gauge refills a click at a time, a pause, off ($EFD7)
             missing = FUEL_MAX - self.fuel
             self.fuel = FUEL_MAX
             self.clear_object(x, y)
@@ -615,7 +621,6 @@ class World:
                 carry = self.assist_carry_on(direction)
                 if carry is not None:          # a turn asked for early: carry on to the junction first
                     return self.move(carry)
-            diff = (FRAME[direction] - self.angle) % 8
             if self.heading == direction:          # a turn in progress ($E519 bit 5) back towards the way it came from: the handler snaps to that frame
                 self.angle = FRAME[direction]
             else:                                  # which way round is the handler's choice, by the heading variable, not always the short way ($E538 etc.)
@@ -681,13 +686,13 @@ class World:
             self.cam = (cx, cy - 1)
 
     def key_direction(self, keys):
-        """The direction the handler dispatcher picks for these keys: bits 0 left, 1 right, 2 up, 3 down tested in the order 0, 2, 1, 3 ($E5A6)."""
+        """The direction the handler dispatcher picks for these keys: bits 0 left, 1 right, 2 up, 3 down tested in the order 0, 2, 1, 3 ($E524)."""
         for bit, d in ((0, LEFT), (2, UP), (1, RIGHT), (3, DOWN)):
             if keys & (1 << bit):
                 return d
 
     def dispatch(self, keys):
-        """$E5A6 (58660): one handler call."""
+        """$E524 (58660), in the dispatcher $E51E: one handler call."""
         d = self.key_direction(keys)
         if d is not None:
             self.move(d)
@@ -743,11 +748,11 @@ class World:
         self.inside = (door, bar.total + self.jingle)
 
     def tick(self, keys, trigger=False):
+        """One game pass ($D899 body). keys: direction bits (Controls.read); trigger: fire held. The player is processed only when
+        `wait` has run out; after that it waits `speed` passes, so a tile step takes speed+1 passes: slow when starting, one per pass at full speed."""
         if self.show_map:                              # the map_view fix: the game waits while the map is up
             return
         self.high = max(self.high, self.score)         # $E0B1: the high score follows the score
-        """One game pass ($D899 body). The player is processed only when `wait` has run out; after that it waits
-        `speed` passes, so a tile step takes speed+1 passes: slow when starting, one per pass at full speed."""
         if self.bar:
             self.bar.t += 1
             if not self.bar.hold and self.bar.t >= self.bar.total:
@@ -828,7 +833,7 @@ class World:
         if self.traffic.hits(self.px, self.py):    # $D8F9: overlapping a vehicle is a crash: SLEEP -1 ($D95D), beep, flash
             self.crash()                              # two beeps and a flash ($D95D) on every pass of an overlap
             self.lose_sleep()
-        if self.speed != 10:                       # $DA03: fuel burns with speed, none at a standstill
+        if self.speed != 10:                       # $D9E3: fuel burns with speed, none at a standstill
             self.fuel_acc += (10 - self.speed) >> 1
             if self.fuel_acc > 255:
                 self.fuel_acc &= 255
@@ -994,6 +999,7 @@ class World:
                 screen.set_at((x, y), tuple(255 - c for c in screen.get_at((x, y))[:3]))
 
     def draw(self, screen):
+        """Draw the current picture (play area, vehicles, bike, HUD) on a 256x192 surface."""
         if "map_view" in self.fixes and self.show_map:
             self.draw_map(screen)
             return

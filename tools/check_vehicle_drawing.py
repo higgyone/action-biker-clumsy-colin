@@ -1,6 +1,6 @@
 """Check how the port draws the traffic against the original's screen, frame by frame.
 
-Usage: python tools/check_vehicle_drawing.py      (run from the repo root; needs work/_tmp/original.z80 from tools/check_patched_game.py)
+Usage: python tools/check_vehicle_drawing.py      (run from the repo root; tools/original.py makes work/_tmp/original.z80 from your copy of the game when missing)
 
 The original and the port are played with compare_original.py's key scripts. After every frame each vehicle cell inside the view is read from
 the original's screen memory and from the port's drawn picture (ink pixels) and the two must be identical. Vehicles moving left or right are
@@ -18,7 +18,6 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 sys.path.insert(0, os.path.join(ROOT, "port"))
 os.chdir(ROOT)
-import numpy as np   # noqa: E402
 import pygame   # noqa: E402
 import skoolkit   # noqa: E402
 from skoolkit.simulator import Simulator   # noqa: E402

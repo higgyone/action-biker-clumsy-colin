@@ -3,7 +3,7 @@
 Usage: python tools/check_port_sound.py      (run from the repo root)
 
 1. Every sound is built from the original's own numbers: the ROM's BEEP gives frequency = 437500 / (HL + 30.125) and a length of
-   DE cycles; the tunes are the three note tables read from the snapshot (assets/sounds.json).
+   DE cycles; the tunes are the four note tables read from your copy of the game (assets/sounds.json).
 2. The port plays the right sound at the right moment, using a recording stand-in for the sound card.
 """
 import json

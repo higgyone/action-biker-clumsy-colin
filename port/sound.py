@@ -8,7 +8,7 @@ samples() builds every sound as an int16 array and needs only numpy, so it can b
 """
 import numpy as np
 from zxport import beeper
-from zxport.beeper import RATE, VOLUME, beep, beep_seconds, frequency, silence   # noqa: F401  (the ROM BEEP, shared with other ports)
+from zxport.beeper import RATE, beep, beep_seconds, frequency, silence   # noqa: F401  (the ROM BEEP; frequency is for tools/check_port_sound.py)
 
 NOTE_GAP = 12 * 256 * 13 / 3_500_000       # seconds: the pause after every note of a tune
 TUNE_TAIL = 255 * 256 * 13 / 3_500_000     # seconds: the wait at the end of a tune
@@ -17,7 +17,7 @@ CRASH_TAIL = 0.0069                        # seconds the crash routine then spen
 
 # beeps used directly by the game: name -> (HL, DE) and the routine that makes them
 BEEPS = {
-    "crash": (16, 261),      # $D95D (55650): twice, each followed by the play-area flash; vehicles, water ($EF9C); runs on every pass of an overlap
+    "crash": (16, 261),      # $D95D (55645), the beep at 55650: twice, each followed by the play-area flash; vehicles, water ($EF9C); runs on every pass of an overlap
     "step": (75, 10),        # $D9FA (55802): one click for every step of the fuel gauge, also while a fuel can refills the tank
     "crisp": (150, 16),      # $EECA (61130): a packet of crisps
     "tick": (1, 1),          # $E82F (59439): one 70-microsecond click every time the bike is drawn, i.e. every pass
@@ -30,6 +30,7 @@ def tune(notes):
 
 
 def tune_seconds(notes):
+    """Length in seconds of a tune from (DE, HL) notes, gaps and tail included."""
     return sum(beep_seconds(hl, de) + NOTE_GAP for de, hl in notes) + TUNE_TAIL
 
 

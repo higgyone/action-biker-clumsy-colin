@@ -1,7 +1,7 @@
 # How the game works (the instruction manual, rebuilt from the code)
 
 Everything here comes from the program itself (its messages, tables and checks), not from the printed inlay or
-instructions, which we do not have. The technical detail is in `notes/03-level-map.md`; gaps are listed at the end.
+instructions, which are not to hand. The technical detail is in `notes/03-level-map.md`; gaps are listed at the end.
 If you have the original manual or remember the game, add to it.
 
 ## The object of the game
@@ -28,7 +28,7 @@ The goal is to **find Martin and get him to the airport before eight o'clock**.
 
 ## What Colin can do
 - **Ride in four directions** on roads and pavements only. Keys: **N left, M right, A up, Z down, Space** (the menu also
-  offers Kempston, Sinclair (6 left, 7 right, 9 up, 8 down, 0 fire), Fuller and Cursor (5 left, 8 right, 7 up, 6 down, Space)). On the tape you first see the KP Skips
+  offers Kempston, Sinclair (6 left, 7 right, 9 up, 8 down, 0 fire), Fuller and Cursor (5 left, 8 right, 7 up, 6 down, Space)). On the tape you first see the cover, the KP Skips
   advert and the title screen, then "Select Controls". The bike turns to face a new direction first, then moves one tile.
 - **Speed:** hold a key and the bike speeds up over about 55 passes; let go and it coasts and slows. It is road-only:
   grass, fences, houses and the lake stop it (no penalty).
@@ -74,8 +74,9 @@ bike. At the bottom are the clock, the blue message bar and the FUEL gauge. Mess
 headlamp adds a beam of light in front, the new tyres fatter wheels, the snorkel and periscope a pipe each, and the Turbo kit a small badge. Scores: crisps 2, a house visit 3, an item 10 (Martin 100), the finish 50.
 
 ## Not known yet (please add anything you remember)
-- Where the items are in a different game (the decoded layout is the first game's).
-- Where Martin is if the layout changes per level (the decoded layout is the first game's).
-- What "You are so clumsy, Colin", "Time to get up Colin" and "Time to wake up colin" are for.
-- How the other vehicles move, and the real speed of a pass.
+- ~~Where the items (and Martin) are in a later game~~: the generator's seed carries on from game to game, so each later game
+  has its own layout, the same on every load; the port places them the same way.
+- ~~What "You are so clumsy, Colin", "Time to get up Colin" and "Time to wake up colin" are for~~: the second lines of the endings (above).
+- ~~How the other vehicles move, and the real speed of a pass~~: decoded in `notes/03-level-map.md` ("Traffic movement"); a pass is
+  about 51 ms, 19.5 a second.
 - Anything on the original inlay (story text, scoring) that is not visible in the program.

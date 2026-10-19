@@ -8,8 +8,8 @@ of Action Biker's port now come from it, and which stay here, and why.
 | Here before | Now | Same behaviour? |
 |---|---|---|
 | `sound.py`: `frequency`, `beep_seconds`, `silence`, `beep`, `tune`, `RATE`, `VOLUME` (the ROM BEEP as square waves) | `zxport.beeper` | the same sums; `tune` passes the note gap and the tail |
-| `biker.py`: `rgb()`, the Spectrum's colours | `zxport.screen.PALETTE` | the same 16 colours (205 normal, 255 bright) |
-| `biker.py`: `screen_surface()`, a 6912-byte screen as a picture | `zxport.screen.screen_from_bytes` + `Screen.to_surface` | the same picture, made with numpy instead of a pixel at a time |
+| `biker.py`: `rgb()`, the Spectrum's colours | `zxport.screen.PALETTE` (`rgb()` stays, reading it) | the same 16 colours (205 normal, 255 bright) |
+| `biker.py`: `screen_surface()`, a 6912-byte screen as a picture | `zxport.screen.screen_from_bytes` + `Screen.to_surface` (`screen_surface()` stays, calling them) | the same picture, made with numpy instead of a pixel at a time |
 | `biker.py`: the window, its border and the scaling (`present`) | `zxport.window.Window.show_surface` | the same size and border |
 | `biker.py`: the pass counter (`acc += ... * PASS_HZ`) | `zxport.window.Pacer(PASS_HZ)` | the same rate; after a long stall it catches up at most 4 passes at once |
 

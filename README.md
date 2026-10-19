@@ -77,7 +77,7 @@ then press **Enter** to play. A joystick works too. Your choice is remembered fo
 With the sound off the game keeps its timing: it still waits for a tune, silently.
 
 ## Playing
-After the setup screen the game starts as the tape does: the KP Skips loading screen and the Action Biker title (any key skips them),
+After the setup screen the game starts as the tape does: the three loading screens (the cover, the KP Skips advert and the Action Biker title; any key skips them),
 then **Select Controls**: 1 Keyboard (N left, M right, A up, Z down, Space), 2 Kempston, 3 Sinclair (6 7 9 8 0), 4 Fuller, 5 Cursor
 (5 8 7 6, Space). The arrow keys and Space always work as well, and a USB joystick or gamepad works with every scheme. **P** or **Esc**
 pauses the game (P or Esc again to carry on, **Q** to quit); before the game starts, Esc quits.
@@ -103,8 +103,8 @@ one, and `tools/compare_original.py` checks that with no fixes the game still pl
 - `tools/` `extract_assets.py` (writes `assets/` from your copy of the game), `original.py` (loads your copy in the simulator), the
   `check_*.py` and `compare_original.py` checks against the original, and helpers (`tilemap.py`, `render_map.py`, `make_patched_game.py`, ...)
 - `assets/` everything the port loads, made by `tools/extract_assets.py`
-- `work/biker.ctl` SkoolKit control file; the place our understanding of the code accumulates
-- `notes/` what we have learned so far
+- `work/biker.ctl` SkoolKit control file: what is known about the code, routine by routine
+- `notes/` the findings, from setup to how the game works
 
 The game itself (object, controls, items, hazards) is written up in `notes/04-how-the-game-works.md`.
 

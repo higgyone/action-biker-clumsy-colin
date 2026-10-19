@@ -22,7 +22,6 @@ With no path, a copy found under game/ or Action-Biker_ZX-Spectrum_EN/ is used: 
 names before [a] variants, as a file or inside a .zip.
 """
 import glob
-import io
 import os
 import zipfile
 

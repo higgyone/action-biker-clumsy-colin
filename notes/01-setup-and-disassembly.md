@@ -1,17 +1,17 @@
 # Setup and first disassembly
 
 ## Environment
-Windows, Python venv in `.venv` with `skoolkit` (10.1), `pygame-ce`, `pillow`, `numpy`.
+Windows, Python venv in `.venv` with `skoolkit` (10.1), `pygame-ce`, `pillow`, `numpy`, and `zxport` from `zx-port-kit` (installed editable).
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install skoolkit pygame-ce pillow numpy
+pip install -r requirements.txt   # skoolkit, pygame-ce, pillow, numpy and zx-port-kit (cloned next to this repo)
 ```
 
 ## Source files
 `Action-Biker_ZX-Spectrum_EN/` holds the downloaded `.tap`, `.z80`, `.tzx` (plus alternate dumps).
-We work from the `.z80` snapshot, copied to `work/biker.z80`.
+The work starts from the `.z80` snapshot, copied to `work/biker.z80`.
 
 - `.z80` = compressed snapshot of the 48K RAM plus a register header. The game is already loaded.
 - `.tap` = BASIC loader `BIKER` (116 bytes) followed by six headerless data blocks (flag 255), loaded by the
@@ -19,8 +19,9 @@ We work from the `.z80` snapshot, copied to `work/biker.z80`.
   bytes. The two 6912-byte blocks are exactly a full screen (6144 pixel bytes + 768 colour bytes). Screen 1
   is a KP Skips sponsor advert and screen 2 the "Action Biker by M J Child" title. `tools/tap_screens.py
   GAME.tap OUT_PREFIX` draws them (local PNGs, gitignored). The block sizes add up to about 63 KB, more than
-  the 48 KB of RAM, so the screens are shown and then overwritten. The other four blocks are not yet
-  investigated (the 17 KB ones may be compressed or hold the game and its data in stages).
+  the 48 KB of RAM, so the screens are shown and then overwritten. Found later: the 7020-byte block starts with a
+  third screen, the cover, shown first, and the 17 KB blocks are game code and data (note 03, "Title screens");
+  `tap_screens.py` draws all three screens.
 - The snapshot is at the "Select Controls" menu (Keyboard, Kempston, Sinclair, Fuller, Cursor),
   not in gameplay.
 
@@ -40,7 +41,7 @@ $PY .venv/Scripts/sna2img.py   work/biker.z80 work/screen.png
 - `sna2skool` disassembles using that control file.
 - `sna2img` renders screen memory (`$4000-$5AFF`) to PNG.
 
-The workflow is a loop: edit `work/biker.ctl` as we learn, re-run `sna2skool`, read the result.
+The workflow is a loop: edit `work/biker.ctl` as the code becomes clear, re-run `sna2skool`, read the result.
 The auto-generated ctl mislabels some data as code; fix by hand.
 
 ## Flat RAM dump

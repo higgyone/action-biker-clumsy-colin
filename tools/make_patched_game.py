@@ -2,12 +2,12 @@
 
 Usage: python tools/make_patched_game.py [TAPE]     (run from the repo root; writes work/biker_infinite.tap and .tzx, or the one kind given)
 
-The game code is stored on the tape exactly as it sits in memory, so three bytes can be changed in place; the tape block's
+The game code is stored on the tape exactly as it sits in memory, so four bytes can be changed in place; the tape block's
 checksum byte (the XOR of the flag and data bytes) is then recalculated. Patches (addresses from notes/03-level-map.md):
 
   1. $D97F  (55679) DEC A -> NOP   the crash routine at $D95D: SLEEP is stored back unchanged after a hit (vehicle, water)
   2. $EF52  (61266) DEC A -> NOP   the oil handler: same, so oil costs nothing either
-  3. $D9F8  (55800) JR $DA47 -> RET   the fuel routine at $DA03: the gauge never takes a step, so the tank stays full
+  3. $D9F8  (55800) JR $DA47 -> RET   the fuel routine at $D9E3: the gauge never takes a step, so the tank stays full
   4. $E2E2  (58082) CP 40 -> CP 255   the end-of-game test in the main loop ($E2AE): it compares the clock's hour hand ($DBD3) with 40 and
                                       only then asks whether the minute hand is 0 (eight o'clock). The hand wraps at 60, so it is never 255
                                       and the day never ends. The clock itself keeps running: the hands move, SLEEP still recovers

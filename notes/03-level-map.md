@@ -222,7 +222,7 @@ It returns A = 0 to let the bike through and A != 0 to block; a handler stops at
   special wheels", SLEEP -1, the object stays), 198 fuel can ("Fill up with petrol", loops until fuel state is (4,4)).
 - 203/204 are the dark-area markers: unless `$5B07` bit 0 (headlamp) is set, a message says "You enter the dark area / You
   need a headlamp"; `$F005` (61445) tracks inside/outside.
-- `$F056` (61782) resets the player sprite pointer from the heading and **the player's attribute lives at `$E731` (59185)**:
+- `$F156` (61782) resets the player sprite pointer from the heading and **the player's attribute lives at `$E731` (59185)**:
   71 (`$47`, bright white) normally. The only other value written is 40 (`$28`, black on cyan) in the water branch of `$EE75`
   (tile 65, see above), with the sprite pointer set to `$5B09` (a different, unextracted sprite set), so that is a rider in
   the water, not petrol. The petrol handler (`$EFD7`) does not change the colour. Bit 5 of `$5B07` selects sprite set 2 at `$5C09`.
@@ -282,12 +282,12 @@ The 49 marker ids are the doors of 49 houses. The routine at `$F80C` (63500-6365
     counter by 1 per processed pass: 10, 9, 8 ... 0 passes between steps, about 55 passes to reach full speed.
   - Key held: counter -1 (to 0), save the keys at `$E518` (58648), call the handler. Key released: counter +1 (to 10) and the
     handler is called with the **saved** keys, so the bike coasts and slows. At 10 it only redraws.
-  - Dispatch (`$E5A6`, 58660) tests input bits in the order 0 left, 2 up, 1 right, 3 down.
+  - Dispatch (`$E524`, 58660, in `$E51E`) tests input bits in the order 0 left, 2 up, 1 right, 3 down.
   - The loop body runs twice per frame call (`$D8C9` = 2). **The pass rate was measured by running the original's frame routine in a simulator**
     (3.5 MHz T-states): a frame takes about **102 ms** (357,000 T-states) whether the bike is stopped or at full speed, so there are
     **19.5 passes per second** (the port's `PASS_HZ`). Nothing syncs it to the 50 Hz interrupt, and the earlier claim that a beeper routine sets the
     pace was a misreading: `$DB3E` draws the speedometer needle.
-- **Correction: `$E28F`/`$E290` is the fuel gauge, not a clock.** `$DA03` (55779) adds `(10 - speed) >> 1` to an 8-bit
+- **Correction: `$E28F`/`$E290` is the fuel gauge, not a clock.** `$D9E3` (55779) adds `(10 - speed) >> 1` to an 8-bit
   accumulator at `$D9E2` (55778) every pass (nothing at a standstill); each carry moves the gauge one step, drawn as a bar on
   screen (`$DA67`, XOR on the HUD). The gauge walks (C,B) = (4,4) -> (4,1) -> (3,8)..(3,1) -> (2,8)..(2,2): **18 steps**, and
   (B,C) = (2,3) is "out of fuel". A full tank lasts about 512 passes at full speed, longer when slower. The fuel can refills it
@@ -363,8 +363,8 @@ and the last is held.
 
 ### In the port: HUD pictures, the walk and the scroll
 `assets/hud_items.json` and `assets/colin_walk.bin` come from `tools/extract_assets.py`. `World.draw_hud` ORs the item pictures onto the bike picture
-(`self.items & flag`), `World.park` starts a walk (`self.walk`, `WALK_PASSES` = 7 passes per frame, game paused) and the room and its
-messages begin when it ends (`begin_room`), and the bar (`Bar`) scrolls each line up from the hidden row into the middle row over `SCROLL_PASSES` = 10 passes (0.4 s). `tools/check_port_items.py` checks all three.
+(`self.items & flag`), `World.park` starts a walk (`self.walk`, `WALK_PASSES` = 6 passes per frame, game paused) and the room and its
+messages begin when it ends (`begin_room`), and the bar (`Bar`) scrolls each line up from the hidden row into the middle row over `SCROLL_PASSES` = 8 passes (0.4 s). `tools/check_port_items.py` checks all three.
 
 ### The dark area, in the original and in the port
 The dark area is **only a drawing effect**: the tile check for the bike (`$EE75`) reads the real map, so walls in the dark still stop the bike.
@@ -428,9 +428,7 @@ from right +1, from down +1), and when the heading already is the asked-for way 
 come from facing left, asked to go right: it goes the long way round through 0, 1, 2, 3 to 4.
 
 ### Title screens and the Select Controls menu (decoded)
-Before the game the tape shows **three loading screens**: the loader (a BASIC stub, then a 7020-byte block read to `$5B00`) copies each screen image to the display with an `LDIR` as it arrives. In tape order: **(1) the cover** ("MASTERTRONIC", KP Skips, "Action Biker", "Clumsy Colin"), the first 6912 bytes of the 7020-byte block (the last 108 bytes are the loader's own code); **(2) the KP Skips advert** (the 6912-byte block 4); **(3) the Action Biker / M J CHILD title** (block 6). The 17500- and 17000-byte blocks between them are game code and data. (The first version of the port showed only 2 and 3, because the cover's block is not exactly 6912 bytes.) The game then asks for the controls with the menu routine at `$DD77` (56695)
-
-then asks for the controls with the menu routine at `$DD77` (56695): it draws "Select Controls" and the five lines (`$DF20`, 57120; the original spells the last one
+Before the game the tape shows **three loading screens**: the loader (a BASIC stub, then a 7020-byte block read to `$5B00`) copies each screen image to the display with an `LDIR` as it arrives. In tape order: **(1) the cover** ("MASTERTRONIC", KP Skips, "Action Biker", "Clumsy Colin"), the first 6912 bytes of the 7020-byte block (the last 108 bytes are the loader's own code); **(2) the KP Skips advert** (the 6912-byte block 4); **(3) the Action Biker / M J CHILD title** (block 6). The 17500- and 17000-byte blocks between them are game code and data. (The first version of the port showed only 2 and 3, because the cover's block is not exactly 6912 bytes.) The game then asks for the controls with the menu routine at `$DD77` (56695): it draws "Select Controls" and the five lines (`$DF20`, 57120; the original spells the last one
 "CURSER") and waits for key 1-5 (row `$F7FE`, bits 0-4). The menu screen is ordinary screen memory, so the port stores it as `assets/screen_menu.bin` (with
 `screen_cover.bin`, `screen_ad.bin` and `screen_title.bin`, all written by `tools/extract_assets.py`). **The border**: the menu starts by setting the border to blue (`LD A,1 / OUT (254),A` at `$DD77`) and nothing in the game changes it afterwards (every gameplay snapshot has a blue border); the loading screens are shown with the ROM's border colour, white. The port draws a 16-pixel border in those colours (black on its own setup screen).
 
@@ -474,7 +472,7 @@ Every message routine does its own scrolling and waiting, so **the whole game st
 - **Crisp packet** (`$EECA`): the blip and the packet removed at once; **the message "Packet of KP Skips" is only shown inside the dark area** (`$F005` = 0,
   where you cannot see the packet) and outside nothing is said and the 2 points come at once. Inside: in 0.42 s, three pauses, out 0.40 s, then the +2 (1.28 s in all).
 - **Dark area in** (`$F006`): line 1 in, three pauses, out, line 2 in, **two** pauses, out (2.38 s). **Out** (`$F070`): in, one pause, out (0.97 s).
-- **Fuel can** (`$F0D7`): "Fill up with petrol" in, the gauge refills (2.8 ms a step), three pauses, out (1.3 s with 6 steps missing).
+- **Fuel can** (`$EFD7`): "Fill up with petrol" in, the gauge refills (2.8 ms a step), three pauses, out (1.3 s with 6 steps missing).
 - **Oil** (`$F0F9`): line 1 in, the bike spins (0.557 s), line 1 out, line 2 in, **SLEEP - 1 now** (1.79 s after the hit), one pause trio, out (2.64 s in all).
 - **Crash flash** (`$D99B`): the play area's ink and paper are inverted after the first beep and back after the second, so it is inverted for about 34 ms (31-65 ms
   into each 76 ms crash). The port inverts the colours of the play area for that window.
@@ -493,7 +491,7 @@ Checks: `tools/check_port_items.py` (lengths, stand-still time, the delayed SLEE
   (`$FE08`; 7.3 s, 7.2 s for the finish), then `$DF67` clears the play area and the fuel gauge refills at once (about 1 ms a step, with the click),
   and the new game starts with its fanfare. Nothing moves meanwhile. The high score `$5B02` survives.
 - **New game start-up (`$D858`):** the reset routine at `$DA97` (55959) sets SLEEP 50, score 0, **items `$5B07` = 0**, and
-  the clock to hour 40, second 0. `$E1FD` (57597) then scatters the items (below), and the map's crisps and oil are cleared and
+  the clock to hour 40, second 0. `$E0FD` (57597) then scatters the items (below), and the map's crisps and oil are cleared and
   placed again.
 - **The clock** (`$DC04`, 56324, once per pass): `$DBD4` counts 5 passes = one tick; every tick `$DBD2` (seconds) +1; every
   12 ticks `$DBD3` (the hand) +1, wrapping at 60. When `$DBD2` wraps at 60 (every **300 passes**) SLEEP gains 5 (max 50) and the
@@ -512,8 +510,8 @@ Checks: `tools/check_port_items.py` (lengths, stand-still time, the delayed SLEE
 - **Crisps and oil:** 30 packets and 20 oil slicks at generator-chosen spots (`$E239`: a random address `$99xx-$D7xx` whose cell is
   empty, nudged left if the cell to its right is taken and up a row if the one below is, then all four cells must be empty), then
   the three fuel cans. The port uses the same generator and reproduces all 212 pickup cells of the real first game.
-- Still open: what `$5B07` bits 4 and 6 do (they are given by 1 and 6 houses), the item graphics in the houses, and
-  the real pass rate.
+- ~~Still open: what `$5B07` bits 4 and 6 do, the item graphics in the houses, and the real pass rate.~~ All answered: bit 4 is the
+  Turbo kit (does nothing) and bit 6 the friend's mum (tea), the item graphics are in `assets/interior.json`, and a pass is about 51 ms (19.5 a second).
 
 ### House interiors (`$F80C`, room drawn by `$FA8E`, items by `$FB31`): furniture assets (extracted to `assets/interior.json`)
 Every house shows the **same kind of room**, built from the table entry: an 18x18-char black viewport, a 12x12 floor patch at
@@ -526,7 +524,7 @@ Every house shows the **same kind of room**, built from the table entry: an 18x1
 - The special items all sit at the room's centre (9,9): 13 = item 4, 14 = **the passenger (a person with a drink)**, 15 = item 6,
   16 = headlamp, 17 = **a wheel**, 18 and 19 the two water items. Only slots 13-19 change between games; slots 0-12 and the colour
   belong to the house for good, so **each house always looks the same** and **differs from the others**.
-- The port draws this when you park (`World.interior`), for two seconds, then carries on.
+- The port draws this when you park (`World.interior`) and keeps it up until the visit's messages and the leaving jingle are over; `tools/check_rooms.py` checks every room against the original.
 
 ### The screen and the HUD (assets: `hud.bin`, `font.bin`)
 - **The play area is 18 x 18 chars at char (1,1)** (pixels 8-151 x 8-151), not 18 x 16 as an earlier note said; the routine at
@@ -537,14 +535,14 @@ Every house shows the **same kind of room**, built from the table entry: an 18x1
   by taking the per-byte majority over all gameplay snapshots).
 - **All text is the ROM font** (`$3D00`, copied to `assets/font.bin`): the text routine at `$DEFE` (57086) draws 8 pixel lines
   per char straight to screen addresses. HIGH digits at (208,44) (`$44BA`), SCORE (208,60) (`$44FA`), SLEEP (208,76) (`$4C3A`, 2
-  digits); each is a 4-digit zero-padded number converted by `$E05A`. The message row is chars (4..27, 22), 24 characters, with
-  a scroll effect in `$E008` (57352) that the port skips.
-- **Fuel gauge:** a one-pixel line, 18 chars-and-bits wide (`$0F`, `$FF`, `$FC` XORed over chars 28-30), that drops one pixel
-  per step from y = 164 (full) to 181 (empty). Clock: two hands, the fast one is `$DBD2` and the slow one `$DBD3`, 60 positions
+  digits); each is a 4-digit zero-padded number converted by `$E05A`. The message row is chars (4..27, 21), 24 characters, with
+  the scroll effect of `$E008` (57352) (see "The message bar"; the port does it too).
+- **Fuel gauge:** each step used XORs one more one-pixel line, 18 pixels wide (`$0F`, `$FF`, `$FC` over chars 28-30), onto the FUEL box (`$DA67`), and
+  the lines stay, so the box is inverted from the top (y = 163) down: full shows nothing, empty has 18 lines (y 163-180). Checked by `tools/check_hud.py`. Clock: two hands, the fast one is `$DBD2` and the slow one `$DBD3`, 60 positions
   each; hour hand at 40 = eight o'clock. The speedometer needle is a line from a pivot at (203,110): at rest it lies 32 pixels along the
   base of the dial to the left (so it is baked into every stationary snapshot and `extract_assets.py` removes it from `hud.bin`),
-  and the snapshot with the bike moving shows it near vertical. **The 11 needle positions are decoded** (next section); the clock hand
-  shapes are still approximated.
+  and the snapshot with the bike moving shows it near vertical. **The 11 needle positions are decoded** (next section); the clock hands
+  are drawn by the original's own line routine in the simulator (`assets/hud_clock.json`) and checked by `tools/check_hud.py`.
 - The high score follows the score as it passes it (`$E0B1`).
 
 ### Vehicle sprites: `$734C`, 3 types x 4 headings, 24 x 16 pixels
@@ -555,7 +553,7 @@ ending exactly where the traffic table starts; type 3 would overlap it, so only 
 - Verified on three vehicles in the traffic snapshot: all six chars matched the screen for each.
 - Type 0 is a boxy van or estate car, type 1 a motorbike with rider, type 2 a low saloon car. Left and right are
   side views, down and up are front and rear views. Picture: `work/vehicle_sprites.png` (local).
-- This explains the earlier puzzle: the other riders did not match our 16x16 player frames because their sprites
+- This explains the earlier puzzle: the other riders did not match the 16x16 player frames because their sprites
   are 24 pixels wide (3 chars), not 16.
 
 ### Traffic movement (`$F1CC`, decoded and verified by simulation)
@@ -659,10 +657,10 @@ counter and saved keys, `$5B04` SLEEP, `$5B05`/`$5B02` score and high score.)
 
 ## Next steps
 1. ~~What `$5B07` bit 4 and bit 6 do~~ done: the Turbo kit does nothing; the friend's mum is a 600-pass tea break.
-2. ~~Traffic in the port~~ done: `port/traffic.py` is the model of `$F1CC` and the port runs it (one update per two passes, crash = SLEEP -1 on overlap). Still open: the real speed of a pass, the exact crash beep and flash, and whether vehicles ever respawn.
+2. ~~Traffic in the port~~ done: `port/traffic.py` is the model of `$F1CC` and the port runs it (one update per two passes, crash = SLEEP -1 on overlap). The speed of a pass (19.5 a second) and the crash beep and flash are measured since; vehicles never leave the table, so none respawn.
    (The dark area is in the port and checked against a real snapshot taken inside it.)
    (The camera dead zone is decoded and in the port, checked against the original's move handlers.)
-5. Which houses hold the items in a *fresh* game is solved by the seeded generator; check the port against more snapshots.
+3. ~~Which houses hold the items in a *fresh* game~~ solved by the seeded generator; `tools/compare_original.py` checks the port against the original frame by frame.
 
 ## Reproducing on another PC
 The private repository holds everything: the original game files (`Action-Biker_ZX-Spectrum_EN/`), the ZEsarUX snapshots in

@@ -1,6 +1,6 @@
 """Check the port's fuel gauge and clock face against the original's screen, frame by frame.
 
-Usage: python tools/check_hud.py      (run from the repo root; needs work/_tmp/original.z80 from tools/check_patched_game.py)
+Usage: python tools/check_hud.py      (run from the repo root; tools/original.py makes work/_tmp/original.z80 from your copy of the game when missing)
 
 The original and the port ride right from the start with the same keys (compare_original.py's set-up). After every frame two parts of the
 HUD are compared pixel by pixel in colour:
@@ -10,7 +10,6 @@ HUD are compared pixel by pixel in colour:
 """
 import importlib.util
 import os
-import random
 import sys
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
@@ -18,7 +17,6 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 sys.path.insert(0, os.path.join(ROOT, "port"))
 os.chdir(ROOT)
-import numpy as np   # noqa: E402
 import pygame   # noqa: E402
 import skoolkit   # noqa: E402
 from skoolkit.simulator import Simulator   # noqa: E402
