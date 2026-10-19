@@ -74,6 +74,22 @@ def wrap(text, width):
     return lines + [line] if line else lines
 
 
+GLYPHS = {}
+
+
+def glyph(font, ch, ink, paper):
+    """One character of the ROM font (font: its 768 bytes from $3D00) as an 8x8 surface, made once per colour pair. Unknown characters are blank."""
+    key = (font, ch, tuple(ink), tuple(paper))
+    if key not in GLYPHS:
+        code = ord(ch) - 32
+        rows = font[8 * code:8 * code + 8] if 0 <= code < 96 else bytes(8)
+        s = GLYPHS[key] = pygame.Surface((8, 8))
+        for r in range(8):
+            for bit in range(8):
+                s.set_at((bit, r), ink if rows[r] & (0x80 >> bit) else paper)
+    return GLYPHS[key]
+
+
 class OptionsScreen:
     def __init__(self, fixes, font, chosen=None, sound=None):
         """fixes: the port's FIXES table {name: description}; font: the ROM font (96 chars x 8 bytes). chosen: the fixes ticked to begin with, sound: the sound lines ticked (None:
@@ -133,11 +149,7 @@ class OptionsScreen:
     def text(self, screen, s, col, row, ink, paper=BLACK):
         """Print with the Spectrum ROM font at character (col, row)."""
         for i, ch in enumerate(s):
-            code = ord(ch) - 32
-            glyph = self.font[8 * code:8 * code + 8] if 0 <= code < 96 else bytes(8)
-            for r in range(8):
-                for bit in range(8):
-                    screen.set_at((8 * (col + i) + bit, 8 * row + r), ink if glyph[r] & (0x80 >> bit) else paper)
+            screen.blit(glyph(self.font, ch, ink, paper), (8 * (col + i), 8 * row))
 
     def draw(self, screen):
         """The screen on a 256x192 surface, in the Spectrum's colours and font."""

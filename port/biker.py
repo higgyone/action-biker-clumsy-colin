@@ -940,12 +940,8 @@ class World:
     def draw_text(self, screen, text, x, y, ink, paper):
         """Print with the ROM font ($3D00, the game's own text routine at $DEFE)."""
         for i, ch in enumerate(text):
-            code = ord(ch) - 32
-            if 0 <= code < 96:
-                glyph = self.font[8 * code:8 * code + 8]
-                for row in range(8):
-                    for bit in range(8):
-                        screen.set_at((x + 8 * i + bit, y + row), ink if glyph[row] & (0x80 >> bit) else paper)
+            if 32 <= ord(ch) < 128:
+                screen.blit(options.glyph(self.font, ch, ink, paper), (x + 8 * i, y))
 
     def field_colours(self, cx, cy):
         a = self.hud_attr[cy * 32 + cx]
@@ -1006,7 +1002,10 @@ class World:
         if self.inside:                      # $F80C redraws only the play area, so the HUD and the message bar stay
             screen.blit(self.hud, (0, 0))
             room = pygame.Rect(VIEW_X * 8, VIEW_Y * 8, VIEW_W * 8, VIEW_H * 8)
-            screen.blit(self.interior(self.inside[0]), room.topleft, room)
+            key = (self.inside[0], self.houses.get(self.inside[0], 0))   # the room changes only with the house and the items left in it
+            if getattr(self, "_room", (None,))[0] != key:
+                self._room = (key, self.interior(self.inside[0]))
+            screen.blit(self._room[1], room.topleft, room)
             self.draw_hud(screen)
             return
         screen.blit(self.hud, (0, 0))
